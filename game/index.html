@@ -385,7 +385,6 @@ function updateWolf(){
   wolf.swipeY=horizontal?0:(Math.sign(dy)||1);
  }
 }
-const woodpile={id:'woodpile',x:119,y:69,width:27,bottom:79,height:10,platform:true,seatY:66};
 const gate={id:'gate',x:65,y:86,width:30,bottom:90,height:50};
 const southGate={...gate,id:'south-gate',y:127,bottom:131};
 const gateSwitch={x:103,y:103};
@@ -394,7 +393,7 @@ const yardFence=[
  {x:95,y:127,width:65,bottom:131,height:50},
  {x:0,y:86,width:65,bottom:90,height:50},
  {x:95,y:86,width:21,bottom:90,height:50},
- {x:116,y:86,width:34,bottom:90,height:18},
+ {x:116,y:86,width:34,bottom:90,height:6}, // Low enough to clear from ground level.
  {x:150,y:86,width:10,bottom:90,height:50}
 ];
 const grassGemTiles=new Set([1,4,8,12,15,18]);
@@ -903,7 +902,7 @@ function roomObjects(){
  if(millApproach) return approachObjects;
  if(ditch) return [cart];
  if(!yard) return furniture;
- return gateOpen?[woodpile,...yardFence]:[woodpile,gate,southGate,...yardFence];
+ return gateOpen?yardFence:[gate,southGate,...yardFence];
 }
 function gateInReach(){
  return yard && !ditch && !gateOpen && !jump &&
@@ -1358,9 +1357,6 @@ function drawYard(){
  rect(gateSwitch.x+(gateOpen?1:-1),gateSwitch.y-5,2,5,3);
  for(const [x,y] of fallenWolves) drawFallenWolf(x,y);
  if(!gemsFound) drawSparkle(53,97);
- for(let y=63;y<=75;y+=4){
-  rect(119,y,27,4,0);rect(121,y,21,2,2);rect(142,y,3,3,3);
- }
  const bloodTrail=[
   [79,48,3,5],[81,53,4,2],[83,57,2,4],[81,62,3,5],
   [78,68,4,2],[77,71,2,4],[79,76,3,3],[81,80,4,4],
