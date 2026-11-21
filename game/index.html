@@ -328,6 +328,7 @@ function enterRoad(destination){
  facing=destination==='yard-checkpoint'?'ArrowDown':fromStorage?'ArrowLeft':fromSluice?'ArrowDown':fromGrain || fromPress || fromVault?'ArrowDown':millGrain || millPress || millVault?'ArrowUp':inMill?'ArrowRight':leavingMill?'ArrowLeft':arrivingFromNorth?'ArrowDown':'ArrowUp';
 }
 let ghostStarted=null;
+let wolfFinalWordsPending=false;
 const ghostDuration=1850;
 function animateGhost(now){
  draw(eyesClosed);
@@ -1441,7 +1442,7 @@ function drawDitch(){
   rect(120,86,6,1,1);rect(128,87,8,1,1);
   rect(128,86,2,1,0);rect(137,86,1,2,1);
  }
- if(wolf.hp===0 && wolfLine<0){
+ if(wolf.hp===0 && wolfLine<0 && !wolfFinalWordsPending){
   drawFallenWolf(wolf.x-3,wolf.y+4);
  }else{
   const x=wolf.x,y=wolf.y;
@@ -1456,7 +1457,10 @@ function drawDitch(){
     rect(x+6+wolf.swipeX*step,y+4+wolf.swipeY*step,2,2,step>reach-3?3:1);
    }
   }
-  if(wolf.hp>0){rect(x-1,y-16,14,4,0);rect(x,y-15,Math.ceil(wolf.hp*12/32),2,3);}
+  if(wolf.hp>0 || wolfFinalWordsPending){
+   rect(x-1,y-16,14,4,0);
+   rect(x,y-15,Math.ceil(wolf.hp*12/32),2,3);
+  }
  }
  rect(95,65,7,13,0);rect(96,66,3,10,2);
  if(!armorFound) drawSparkle(110,61);
@@ -2478,7 +2482,16 @@ function hitAttackTarget(target){
   }
  }
  if(target===boss && !boss.hp) defeatSluiceBoss();
- if(target===wolf && !wolf.hp){stopWolfGrowl();speakWolf();}
+ if(target===wolf && !wolf.hp){
+  stopWolfGrowl();
+  wolfFinalWordsPending=true;
+  if(jump) jump.direction=null;
+  stop();
+  setTimeout(()=>{
+   wolfFinalWordsPending=false;
+   speakWolf();
+  },750);
+ }
  else if(target.hp===0 && target!==boss && !bossSpiders.includes(target)) queueStorySave();
  document.dispatchEvent(new CustomEvent('game:target-damaged',{
   detail:{id:target.id,damage,hp:target.hp}
@@ -2549,6 +2562,7 @@ punchButton.addEventListener('click',event=>{
  if(event.detail===0) startPunch();
 });
 function startPunch(){
+ if(wolfFinalWordsPending) return;
  if(screen==='title'){beginGame();return;}
  if(raisedItem){dismissAcquisition();return;}
  if(drowningAt!==null) return;
@@ -2716,7 +2730,7 @@ function startJump(){
   else setScreen('play');
   return;
  }
- if(screen!=='play' || discoveryOpen || wolfLine>=0 || jump || chestLid || changingRoom) return;
+ if(screen!=='play' || discoveryOpen || wolfFinalWordsPending || wolfLine>=0 || jump || chestLid || changingRoom) return;
  restFeet();
  const direction=heldDirection??Array.from(heldKeys).at(-1);
  jump={elapsed:0,height:standingHeight,launchHeight:standingHeight,direction,fromDpad:heldDirection!==null,distance:0,safeX:playerX,safeY:playerY};
@@ -2825,7 +2839,7 @@ function move(direction,airborne=false){
   if(direction==='ArrowUp' || direction==='ArrowLeft') highlightScent(false);
   return;
  }
- if(screen!=='play' || discoveryOpen || wolfLine>=0 || chestLid || changingRoom || (jump && !airborne)) return;
+ if(screen!=='play' || discoveryOpen || wolfFinalWordsPending || wolfLine>=0 || chestLid || changingRoom || (jump && !airborne)) return;
  if(facing!==direction && !jabFrame){
   facing=direction;
   restFeet();
@@ -3085,7 +3099,7 @@ function renderSystemHints(){
  selectHint.textContent=screen==='inventory'?'Press '+selectKey+' for Stats':'Press '+selectKey+' to return';
 }
 function setScreen(next){
- if(raisedItem || drowningAt!==null || bossControlsLocked() || changingRoom || shopStep!==null || discoveryOpen || wolfLine>=0) return;
+ if(raisedItem || drowningAt!==null || bossControlsLocked() || changingRoom || shopStep!==null || discoveryOpen || wolfFinalWordsPending || wolfLine>=0) return;
  const wasPlaying=screen==='play';
  sluiceLastFrame=null;
  screen=next;
@@ -3428,7 +3442,7 @@ function makeStorySave(){
   inventory:packForSave(inventory), equipment:Array.from(equipment), chest:packForSave(chestItems),
   progress:{
    gateOpen,gemsFound,armorFound,plankTaken,bridgeBuilt,wolfGreeted,
-   ditchCleared:wolf.hp===0 && wolfLine<0,daggerTaken:!dagger.available,
+   ditchCleared:wolf.hp===0 && wolfLine<0 && !wolfFinalWordsPending,daggerTaken:!dagger.available,
    innCrateBroken:crate.broken,innGemAvailable:crateGem.available,
    millGateOpen,entryPotionDropped:potionDropped,
    entryPotion:pointForSave(millDrop.potion),vaultPotion:pointForSave(millDrop.vaultPotion),
