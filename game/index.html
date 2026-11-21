@@ -1,0 +1,3606 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Inn</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:#202523}.game-screen>canvas{display:block;width:min(640px,92vw);height:auto;image-rendering:pixelated;border:8px solid #101712;border-radius:8px}
+body{align-items:start}
+main{margin:16px auto;width:min(640px,92vw)}
+.game-screen>canvas{width:100%}
+button{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:0 0 4px;padding:0 4px;border:0;background:transparent;color:#c0cf8a;font:600 13px system-ui;cursor:pointer}
+.switch-track{position:relative;display:block;width:30px;height:16px;border:1px solid #789568;border-radius:999px;background:#172e22}
+.switch-track::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#c0cf8a}
+button[aria-pressed="true"] .switch-track{background:#c0cf8a}
+button[aria-pressed="true"] .switch-track::after{transform:translateX(14px);background:#172e22}
+html.screen-locked,html.screen-locked body{overflow:hidden;overscroll-behavior:none;touch-action:none}
+
+.dpad{display:grid;grid-template:repeat(3,36px)/repeat(3,36px);width:max-content;margin:10px 0 0 8px;touch-action:none;user-select:none;-webkit-user-select:none}
+.dpad button,.dpad-center{display:grid;place-items:center;width:36px;height:36px;min-height:0;margin:0;padding:0;background:#172e22;color:#789568;font-size:13px}
+.dpad button{position:relative;overflow:visible}
+.dpad button::before{content:"";position:absolute;inset:-5px;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px)}
+.dpad button[data-held]{background:#395548;color:#c0cf8a}
+.up{grid-area:1/2;border-radius:5px 5px 0 0}
+.left{grid-area:2/1;border-radius:5px 0 0 5px}
+.right{grid-area:2/3;border-radius:0 5px 5px 0}
+.down{grid-area:3/2;border-radius:0 0 5px 5px}
+.dpad-center{grid-area:2/2}
+.dpad-center::after{content:"";width:15px;height:15px;border:1px solid #395548;border-radius:50%}
+main{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+canvas,.dpad button{-webkit-tap-highlight-color:transparent}
+
+.controller{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 8px 12px}
+.controller .dpad{margin:0}
+.action-buttons{display:flex;align-items:center;gap:8px;padding-right:4px}
+.controller button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.action-buttons button{justify-content:center;width:46px;height:46px;margin:0;border-radius:50%;background:#172e22;box-shadow:inset 0 -3px #395548;color:#c0cf8a}
+.action-buttons button{position:relative}
+.keyboard-badge{display:none;position:absolute;bottom:4px;left:0;right:0;text-align:center;font:700 9px monospace;color:#a3bc7b}
+[data-input="keyboard"] .keyboard-badge,[data-desktop-controls] .keyboard-badge{display:block}
+[data-input="keyboard"] .action-buttons button,[data-desktop-controls] .action-buttons button{padding-bottom:9px}
+.action-buttons button:last-child{transform:translateY(-18px)}
+.system-buttons{grid-column:1/-1;display:flex;justify-content:center;gap:12px}
+.system-buttons button{flex-direction:column;justify-content:center;gap:4px;margin:0;font-size:11px;text-transform:uppercase}
+.system-buttons .keyboard-badge{position:static}
+.system-buttons button::before{content:"";width:36px;height:9px;border-radius:999px;background:#789568;box-shadow:inset 0 -2px #395548}
+.game-screen{position:relative}
+#opening-screen{position:absolute;inset:8px;z-index:4;overflow:hidden;background:#172e22}
+#opening-screen[hidden]{display:none}
+#ending-screen{position:absolute;inset:8px;z-index:5;display:grid;place-items:center;padding:12px;background:#fff;color:#172e22;text-align:center;font:bold clamp(12px,3.5vw,20px)/1.4 monospace;animation:ending-fade 950ms ease both}
+#ending-screen[hidden]{display:none}
+#ending-screen p{margin:0;animation:ending-fade 750ms ease 950ms both}
+@keyframes ending-fade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#ending-screen,#ending-screen p{animation:none}}
+#opening-screen canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#opening-title{pointer-events:none;animation:title-flash 1.6s steps(1,end) infinite}
+@keyframes title-flash{0%,72%{opacity:1} 76%,94%{opacity:.65}}
+#opening-hint{position:absolute;bottom:calc(3% + 42px);left:50%;transform:translateX(-50%);margin:0;padding:3px 5px;background:#172e22;color:#c0cf8a;white-space:nowrap;text-align:center;font:700 clamp(9px,2.8vw,13px)/1.3 monospace}
+#opening-actions{position:absolute;bottom:3%;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+#opening-actions button{justify-content:center;min-height:36px;margin:0;padding:2px 12px;border:1px solid #789568;background:#172e22;color:#c0cf8a;white-space:nowrap;font:bold clamp(11px,3.4vw,18px) monospace}
+#opening-actions button[hidden]{display:none}
+#new-game-confirm{width:min(290px,calc(100% - 32px));padding:14px;border:2px solid #789568;background:#172e22;color:#c0cf8a;font:700 clamp(12px,3.5vw,15px)/1.4 monospace;text-align:center}
+#new-game-confirm::backdrop{background:#101a13b0}
+#new-game-confirm h2{margin:0;font:inherit}
+#new-game-confirm p{margin:8px 0 14px;font-weight:400}
+#new-game-confirm button{justify-content:center;padding:0 12px;margin:0 3px;background:#395548;font:inherit}
+#new-game-confirm button:focus-visible{outline:2px solid #c0cf8a;outline-offset:2px}
+#save-notice{margin:4px 8px;color:#c0cf8a;font:12px monospace}
+#opening-actions button:focus-visible{outline:2px solid #c0cf8a;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){#opening-title{animation:none}}
+.pause-screen{position:absolute;inset:8px;display:grid;place-content:center;text-align:center;background:#172e22ee;color:#c0cf8a;font:700 clamp(18px,5vw,30px) monospace}
+.pause-screen[hidden]{display:none}
+.pause-screen small{font-size:12px;margin-top:8px}
+.inventory-screen{position:absolute;inset:8px;display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:6px;padding:8px;background:#172e22;color:#c0cf8a;font:13px monospace}
+.inventory-screen[hidden]{display:none}
+.inventory-screen section{min-height:0;overflow:auto;overscroll-behavior:contain;border:1px solid #789568;padding:6px}
+.inventory-screen h2{margin:0 0 6px;font:700 clamp(12px,4vw,20px) monospace}
+.inventory-screen dl,.inventory-screen ul{padding:0;margin:0;list-style:none;overflow-wrap:anywhere}
+.inventory-screen dd{margin:0 0 4px;color:#789568}
+.inventory-screen small{grid-column:1/-1;align-self:end;text-align:center}
+#info-box{position:absolute;top:16.67%;left:50%;transform:translate(-50%,-50%);padding:5px 10px;border:2px solid #789568;background:#172e22;color:#c0cf8a;font:700 clamp(11px,3.5vw,18px) monospace;width:max-content;max-width:calc(100% - 24px);text-align:center;overflow-wrap:anywhere;pointer-events:none}
+#scent-skill{min-height:28px;margin:0;padding:2px 6px;border:1px solid #789568;font:inherit}
+.scent-icon{width:16px;height:16px;image-rendering:pixelated}
+#scent-skill[aria-expanded="true"]{background:#395548;color:#e5efbd}
+#scent-description{margin:4px 0 0;font-size:clamp(9px,2.8vw,12px);line-height:1.2;color:#c0cf8a}
+#stat-fields,.equipment-fields{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px}
+#stat-fields dd,.equipment-fields dd{margin:0;text-align:right}
+.inventory-screen h3{margin:6px 0 3px;font-size:12px}
+.inventory-item-detail{display:block;margin:2px 0;color:#a3bc7b}
+#inventory-panel:not([hidden]){display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.item-grid{display:grid;grid-template:repeat(4,minmax(0,1fr))/repeat(4,minmax(0,1fr));gap:1px}
+.item-grid li{min-width:0;display:grid;justify-items:center;align-content:center;text-align:center;font-size:clamp(8px,2.6vw,12px);line-height:1.05;border:1px solid transparent}
+.item-grid .selected{border-color:#c0cf8a}
+.item-icon{width:12px;height:12px;background:#c0cf8a;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.item-icon.dagger{display:inline-block;vertical-align:middle;margin-right:3px;clip-path:polygon(92% 0,77% 45%,43% 72%,57% 86%,47% 96%,32% 82%,13% 100%,0 87%,19% 68%,5% 53%,15% 43%,29% 57%,56% 23%)}
+#item-info{border:1px solid #789568;padding:3px 5px;min-height:2.5em;font-size:clamp(9px,2.8vw,12px);line-height:1.15}
+.inventory-heading,.gem-counter{display:flex;align-items:center;gap:5px}
+.inventory-heading{justify-content:space-between;margin-bottom:4px}
+.inventory-heading h2{margin:0}
+.gem-counter{font-size:clamp(9px,3vw,13px)}
+#storage-grids{display:grid;min-height:0}
+#storage-grids.split{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.item-grid[hidden]{display:none}
+.split .item-grid{border:1px solid #395548;min-width:0;padding:1px}
+.split .item-grid.active{border-color:#789568}
+.split .item-grid li span:last-child{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#inventory-panel.storage .inventory-heading{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#inventory-panel.storage .gem-counter{display:none}
+#music-toggle[aria-pressed="true"]{color:#c0cf8a}
+#room-fade{position:absolute;inset:8px;background:#101a13;opacity:0;pointer-events:none;transition:opacity 160ms linear}
+#room-fade.dark{opacity:1}
+#equip-notice{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-50%);width:max-content;max-width:85%;padding:12px 16px;border:2px solid #c0cf8a;background:#101a13;color:#e5efbd;box-shadow:0 0 0 3px #101a13,0 5px 0 #0008;text-align:center;font-size:clamp(12px,4vw,18px);font-weight:bold;pointer-events:none}
+.item-grid li.equipped{position:relative}
+.item-grid li.equipped::before{content:"✓";position:absolute;top:0;left:1px;color:#e5efbd;font:bold 9px/1 monospace;pointer-events:none}
+#wolf-dialogue,#shop-dialogue{position:absolute;z-index:3;left:8%;right:8%;bottom:8%;padding:12px;border:2px solid #c0cf8a;background:#101a13;color:#e5efbd;font:bold clamp(11px,3.6vw,17px)/1.35 monospace}
+#wolf-dialogue small,#shop-dialogue small{display:block;text-align:right;margin-top:6px}
+.armor-icon{width:14px;height:14px;image-rendering:pixelated;vertical-align:middle;margin-right:3px}
+#traveler-thought{position:absolute;top:27%;left:10%;right:10%;color:#fff2bf;text-shadow:1px 1px 0 #101a13,-1px -1px 0 #101a13;text-align:center;font:italic 700 clamp(12px,3.9vw,18px)/1.25 Georgia,serif;pointer-events:none}
+#traveler-thought:not([hidden]){animation:traveler-thought-fade 4s ease-in-out both}
+@keyframes traveler-thought-fade{0%,100%{opacity:0}12.5%,87.5%{opacity:1}}
+.item-icon.plank{border:1px solid #5a3a20;background:repeating-linear-gradient(0deg,#ab7540 0 2px,#d6a764 2px 3px);clip-path:none;width:14px;height:6px;transform:rotate(-28deg);margin:3px 0}
+#shop-options{margin-top:7px;display:flex;gap:12px}
+#shop-options[hidden]{display:none}
+#shop-options span{padding:2px 7px;border:1px solid transparent}
+#shop-options .selected{border-color:#c0cf8a;background:#395548}
+#shop-stock{list-style:none;margin:5px 0 0;padding:0;font-size:clamp(10px,3vw,15px)}
+#shop-stock li{display:flex;align-items:center;justify-content:space-between;padding:2px 5px;border:1px solid transparent}
+#shop-stock li.selected{border-color:#c0cf8a;background:#395548}
+.item-icon.potion,.item-icon.bow,.item-icon.shield{display:inline-block;vertical-align:middle;margin-right:3px}
+.item-icon.potion{background:#d6a5bd;clip-path:polygon(33% 0,67% 0,67% 35%,88% 55%,88% 95%,12% 95%,12% 55%,33% 35%)}
+.item-icon.note{width:10px;height:12px;clip-path:polygon(0 0,70% 0,100% 25%,100% 100%,0 100%);background:repeating-linear-gradient(to bottom,#c0cf8a 0 3px,#789568 3px 4px)}
+.item-icon.bow{background:#b5cb72;clip-path:polygon(25% 0,60% 0,90% 25%,100% 50%,90% 75%,60% 100%,25% 100%,25% 91%,33% 9%,41% 9%,33% 91%,58% 89%,80% 69%,90% 50%,80% 31%,58% 11%,25% 11%)}
+.item-icon.shield{background:#b5cb72;clip-path:polygon(5% 10%,50% 0,95% 10%,86% 62%,50% 100%,14% 62%)}
+</style>
+<main>
+<button type="button" id="screen-lock" aria-pressed="false">Lock screen <span class="switch-track" aria-hidden="true"></span></button>
+<button type="button" id="music-toggle" aria-pressed="true">Music On</button>
+<audio id="inn-music" src="the-inn-theme.wav" preload="none" loop></audio>
+<div class="game-screen"><canvas width="160" height="144" aria-label="The Inn game view" role="img"></canvas><div id="opening-screen" aria-label="Title screen">
+<canvas id="opening-art" width="160" height="144" aria-hidden="true"></canvas>
+<canvas id="opening-title" width="160" height="144" role="img" aria-label="The Inn"></canvas>
+<p id="opening-hint" hidden>Arrow keys to move · Z for A · X for B<br>Return for Start · Right Shift for Select</p>
+<div id="opening-actions">
+<button type="button" id="opening-start">Press ‘A’ To Start</button>
+<button type="button" id="opening-new" hidden>New Game</button>
+</div>
+<dialog id="new-game-confirm" aria-labelledby="new-game-question" aria-describedby="new-game-warning">
+<h2 id="new-game-question">Start a new game?</h2>
+<p id="new-game-warning">This will erase your current save.</p>
+<button type="button" id="new-game-cancel" autofocus>Cancel</button>
+<button type="button" id="new-game-accept">Start New Game</button>
+</dialog>
+</div><div id="ending-screen" role="status" hidden><p>…the journey continues soon…</p></div><div id="wolf-dialogue" role="dialog" aria-label="Final words" hidden><span></span><small id="dialogue-continue">A · Continue</small></div><div id="shop-dialogue" role="dialog" aria-label="Mill Shop" hidden><span id="shop-line"></span><div id="shop-options" hidden><span>Buy</span><span>Sell</span></div><ul id="shop-stock" hidden></ul><small id="shop-controls"></small></div><div id="room-fade" aria-hidden="true"></div><div id="traveler-thought" role="status" hidden></div><div id="info-box" role="status" hidden></div><div id="pause-screen" class="pause-screen" role="status" hidden>PAUSED<small id="pause-resume-hint">Press Start to resume</small></div>
+<div id="inventory-screen" class="inventory-screen" aria-label="Inventory and stats" hidden>
+<section id="inventory-panel"><header class="inventory-heading"><h2 id="inventory-title">Inventory</h2><h2 id="chest-title" hidden>Chest</h2><span class="gem-counter">Gems <span class="item-icon" aria-hidden="true"></span> <span id="inventory-gems">0</span></span></header><div id="storage-grids"><ul id="inventory-fields" class="item-grid" aria-label="Pack"></ul><ul id="chest-fields" class="item-grid" aria-label="Chest" hidden></ul></div><div id="item-info" role="status"></div><div id="equip-notice" role="status" hidden></div></section>
+<section id="stats-panel" hidden><h2>Stats</h2><dl id="stat-fields"></dl>
+<h3>Equipment</h3>
+<dl class="equipment-fields">
+<dt>Head</dt><dd data-equipment-slot="head">—</dd>
+<dt>Body</dt><dd data-equipment-slot="body">—</dd>
+<dt>Shield</dt><dd data-equipment-slot="shield">—</dd>
+<dt>Weapon</dt><dd data-equipment-slot="weapon">—</dd>
+<dt>Accessory</dt><dd data-equipment-slot="accessory">—</dd>
+</dl><div id="skills-panel" hidden><h3>Skills</h3>
+<button type="button" id="scent-skill" aria-expanded="false"><canvas class="scent-icon" width="11" height="11" aria-hidden="true"></canvas>Scent</button>
+<p id="scent-description" hidden></p></div></section>
+<small id="select-hint">Press Select for Stats</small>
+</div></div>
+<div class="controller">
+<div class="dpad" role="group" aria-label="Movement">
+<button type="button" class="up" data-direction="ArrowUp" aria-label="Move up">▲</button>
+<button type="button" class="left" data-direction="ArrowLeft" aria-label="Move left">◀</button>
+<span class="dpad-center" aria-hidden="true"></span>
+<button type="button" class="right" data-direction="ArrowRight" aria-label="Move right">▶</button>
+<button type="button" class="down" data-direction="ArrowDown" aria-label="Move down">▼</button>
+</div>
+<div class="action-buttons" role="group" aria-label="Action buttons">
+<button type="button" id="action-b" aria-keyshortcuts="X">B<small class="keyboard-badge" aria-hidden="true">X</small></button>
+<button type="button" id="action-a" aria-keyshortcuts="Z">A<small class="keyboard-badge" aria-hidden="true">Z</small></button>
+</div>
+<div class="system-buttons" role="group" aria-label="System buttons">
+<button type="button" id="select" aria-pressed="false" aria-controls="inventory-screen" aria-keyshortcuts="Shift">Select<small class="keyboard-badge" aria-hidden="true">Right Shift</small></button>
+<button type="button" id="start" aria-pressed="false" aria-keyshortcuts="Enter">Start<small class="keyboard-badge" aria-hidden="true">Return</small></button>
+</div>
+</div>
+<p id="save-notice" role="status" hidden></p>
+</main>
+<script>
+const music=document.querySelector('#inn-music');
+const musicButton=document.querySelector('#music-toggle');
+let musicEnabled=true;
+function startMusic(){
+ if(musicEnabled && music.paused) music.play().catch(()=>{});
+}
+musicButton.addEventListener('click',()=>{
+ musicEnabled=!musicEnabled;
+ musicButton.setAttribute('aria-pressed',String(musicEnabled));
+ musicButton.textContent=musicEnabled?'Music On':'Music Off';
+ if(musicEnabled) startMusic();
+ else music.pause();
+});
+document.addEventListener('click',event=>{
+ if(!musicButton.contains(event.target)) startMusic();
+});
+document.addEventListener('keydown',startMusic);
+const lockButton=document.querySelector('#screen-lock');
+const root=document.documentElement;
+lockButton.addEventListener('click',()=>{
+ const locked=root.classList.toggle('screen-locked');
+ lockButton.setAttribute('aria-pressed',String(locked));
+});
+document.addEventListener('touchmove',event=>{
+ if(root.classList.contains('screen-locked') && event.cancelable) event.preventDefault();
+},{passive:false});
+const game=document.querySelector('main');
+for(const type of ['selectstart','contextmenu']){
+ game.addEventListener(type,event=>event.preventDefault());
+}
+const ctx=document.querySelector('canvas').getContext('2d');
+const walkMinX=13, walkMaxX=146, walkBottomY=135, outdoorWalkTop=48;
+const grassBowRange=Math.round((walkMaxX-walkMinX)*3/4);
+const desktopControls=Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches);
+let inputMode=desktopControls?'keyboard':'pointer';
+const keyboardLabels={A:'Z',B:'X',Start:'Return',Select:'Right Shift'};
+function actionKey(button){
+ return inputMode==='keyboard'?keyboardLabels[button]:button;
+}
+const colors=['#172e22','#395548','#789568','#c0cf8a'];
+function rect(x,y,w,h,color){ctx.fillStyle=colors[color];ctx.fillRect(x,y,w,h)}
+const infoBox=document.querySelector('#info-box');
+const travelerThought=document.querySelector('#traveler-thought');
+const innThought={text:'Where am I? What is this place?',readyAt:performance.now()+1000,shownAt:null};
+const yardThought={text:'I have to find a way to get to that switch',readyAt:null,shownAt:null};
+const riverThought={text:'The crossing is washed out. I need to find a way across.',readyAt:null,shownAt:null};
+const woodenPlank={id:'wooden-plank',label:'Wooden Plank',value:1,description:'A sturdy board long enough to bridge the washout.'};
+let wolfGreeted=false;
+let infoTimer, infoMessage="", raisedItem=null;
+const baseHpPerStar=10, enemyHitHp=3, bossHitHp=5;
+let hpPerStar=baseHpPerStar, lifeStars=1, missingHp=0, defeated=false;
+let gems=0, damageFlashUntil=0;
+function maxHp(){return lifeStars*hpPerStar;}
+function currentHp(){
+ // Changing gear preserves wounds and cannot defeat the Traveler by itself.
+ return defeated?0:Math.max(1,maxHp()-missingHp);
+}
+function restoreFullHp(){
+ missingHp=0;
+ defeated=false;
+}
+const testRoom=new URLSearchParams(location.search).get('mill');
+const testRooms={'3':'ditch','10':'mill-entry','11':'mill-grain','12':'mill-press','13':'mill-vault','14':'mill-storage','15':'mill'};
+const testStart=Object.hasOwn(testRooms,testRoom)?testRooms[testRoom]:null;
+let millEntry=testStart==='mill-entry', millGrain=testStart==='mill-grain';
+let millPress=testStart==='mill-press', millVault=testStart==='mill-vault';
+let millStorage=testStart==='mill-storage';
+let sluiceRoom=testStart==='mill';
+let millGateOpen=millGrain || millPress || millVault || millStorage || sluiceRoom;
+let inMill=millEntry || millGrain || millPress || millVault || millStorage || sluiceRoom;
+const startInDitch=testStart==='ditch';
+let millApproach=testStart==='mill-approach';
+let yard=startInDitch || millApproach || inMill, gateOpen=yard, changingRoom=false, rainSource;
+const roomFade=document.querySelector('#room-fade');
+let nextWolfGrowl=0, wolfGrowl=null;
+let inShop=false, shopStep=null, shopChoice=0;
+let ditch=startInDitch, plankTaken=millApproach || inMill, bridgeBuilt=plankTaken, wolfLine=-1;
+const wolf={id:'ditch-wolf',x:84,y:72,width:12,bottom:80,height:14,hp:32,phase:0,ticks:0};
+const fallenWolves=[[41,101],[115,116],[57,117]];
+let gemsFound=false, armorFound=false, armorEquipped=false, helmetEquipped=false;
+let dismissedWolf=-1, discoveryOpen=false,discoveryMessage='';
+const strawHelmet={id:'straw-helmet',label:'Straw Helmet',value:1,description:'A cap woven from tough straw.',defBonus:1,slot:'head'};
+const strawArmor={id:'straw-armor',label:'Straw Armor',value:1,description:'Woven straw tied with cord.',defBonus:1,slot:'body'};
+const cart={x:96,y:67,width:26,bottom:79,height:28};
+const wolfDialogue=document.querySelector('#wolf-dialogue');
+const wolfLines=[
+ "Werewolf: You would’ve been here with me if you hadn’t betrayed us.",
+ "Traveler: What do you mean? Who are you?",
+ "Werewolf: Don’t lie to me, you know what happened.",
+ "Traveler: Tell me who you are… tell me who I am.",
+ "Werewolf: They really messed you up, didn’t they…"
+];
+function changeRoad(destination){
+ stopWolfGrowl();
+ nextWolfGrowl=performance.now()+700;
+ changingRoom=true;
+ stop();
+ endPunch();
+ clearTimeout(infoTimer);
+ infoMessage='';
+ wolf.phase=0;
+ wolf.ticks=0;
+ roomFade.classList.add('dark');
+ setTimeout(()=>{
+  enterRoad(destination);
+  syncOutdoorAudio();
+  draw(eyesClosed);
+  roomFade.classList.remove('dark');
+  setTimeout(()=>{changingRoom=false;},160);
+  queueStorySave();
+ },170);
+}
+function enterRoad(destination){
+ ditch=destination==='ditch-north' || destination==='ditch-south';
+ inShop=destination==='mill-shop';
+ const fromGrain=destination==='mill-entry-from-grain';
+ millEntry=destination==='mill-entry' || fromGrain;
+ const fromPress=destination==='mill-grain-from-press';
+ millGrain=destination==='mill-grain' || fromPress;
+ const fromVault=destination==='mill-press-from-vault';
+ const fromStorage=destination==='mill-press-from-storage';
+ millPress=destination==='mill-press' || fromVault || fromStorage;
+ const fromSluice=destination==='mill-storage-from-sluice';
+ millVault=destination==='mill-vault';
+ millStorage=destination==='mill-storage' || fromSluice;
+ sluiceRoom=destination==='mill';
+ inMill=millEntry || millGrain || millPress || millVault || millStorage || sluiceRoom;
+ raftY=raftStartY;
+ sluiceLastFrame=null;
+ drowningAt=null;
+ if(sluiceRoom && boss.phase!=='defeated') resetSluiceBoss();
+ damageFlashUntil=0;
+ pressTick=0;
+ pressHit=false;
+ const leavingMill=destination==='mill-exit';
+ yard=destination!=='inn';
+ const leavingShop=destination==='shop-exit';
+ millApproach=destination==='mill-approach' || leavingShop || leavingMill;
+ const arrivingFromNorth=destination==='ditch-north' || millApproach;
+ playerX=fromSluice?80:millStorage?23:fromStorage?137:fromPress?124:millVault || millPress || millGrain || fromGrain?80:inMill?21:leavingMill?141:leavingShop?119:80;
+ playerY=!yard?105:destination==='yard-checkpoint'?55:fromSluice?108:millStorage || fromStorage?116:fromPress || fromVault?55:millVault || millPress || millGrain?127:fromGrain?58:inMill?102:leavingMill?99:inShop?128:leavingShop?84:arrivingFromNorth?51:132;
+ standingHeight=0;
+ facing=destination==='yard-checkpoint'?'ArrowDown':fromStorage?'ArrowLeft':fromSluice?'ArrowDown':fromGrain || fromPress || fromVault?'ArrowDown':millGrain || millPress || millVault?'ArrowUp':inMill?'ArrowRight':leavingMill?'ArrowLeft':arrivingFromNorth?'ArrowDown':'ArrowUp';
+}
+let ghostStarted=null;
+const ghostDuration=1850;
+function animateGhost(now){
+ draw(eyesClosed);
+ if(now-ghostStarted<ghostDuration) requestAnimationFrame(animateGhost);
+}
+function speakWolf(){
+ wolfLine++;
+ if(wolfLine===0) stop();
+ wolfDialogue.hidden=wolfLine>=wolfLines.length;
+ if(wolfDialogue.hidden){
+  wolfLine=-1;
+  ghostStarted=performance.now();
+  queueStorySave();
+  requestAnimationFrame(animateGhost);
+ }
+ else wolfDialogue.firstElementChild.textContent=wolfLines[wolfLine];
+ draw(eyesClosed);
+}
+function updateWolf(){
+ if(!ditch || changingRoom || discoveryOpen || wolf.hp===0) return;
+ const now=performance.now();
+ if(now>=nextWolfGrowl && effectsAudio?.state==='running'){
+  playWolfGrowl();
+  nextWolfGrowl=now+4800;
+ }
+ const dx=playerX-(wolf.x+6),dy=playerY-(wolf.y+4);
+ if(!wolfGreeted && wolf.hp===32 && !punching && !jabFrame && Math.hypot(dx,dy)<=25){
+  wolfGreeted=true;
+  showDiscovery('Werewolf: You came back.');
+  return;
+ }
+ if(wolf.ticks>0 && --wolf.ticks>0) return;
+ if(wolf.phase===1){
+  wolf.phase=2;
+  wolf.ticks=4;
+  const forward=dx*wolf.swipeX+dy*wolf.swipeY;
+  const sideways=dx*wolf.swipeY-dy*wolf.swipeX;
+  if(forward>=0 && forward<=15 && Math.abs(sideways)<=8 && (jump?.height??0)<7){
+   document.dispatchEvent(new CustomEvent('game:damage',{detail:{amount:enemyHitHp}}));
+   if(defeated){
+    restoreFullHp();
+    cancelAnimationFrame(jumpFrame);
+    jump=null;
+    wolf.hp=32;
+    changeRoad('yard');
+   }
+  }
+ }else if(wolf.phase===2){
+  wolf.phase=0;
+ }else if(Math.abs(dx)<=15 && Math.abs(dy)<=13){
+  wolf.phase=1;
+  wolf.ticks=3;
+  const horizontal=Math.abs(dx)>Math.abs(dy);
+  wolf.swipeX=horizontal?Math.sign(dx):0;
+  wolf.swipeY=horizontal?0:(Math.sign(dy)||1);
+ }
+}
+const woodpile={id:'woodpile',x:119,y:69,width:27,bottom:79,height:10,platform:true,seatY:66};
+const gate={id:'gate',x:65,y:86,width:30,bottom:90,height:50};
+const southGate={...gate,id:'south-gate',y:127,bottom:131};
+const gateSwitch={x:103,y:103};
+const yardFence=[
+ {x:0,y:127,width:65,bottom:131,height:50},
+ {x:95,y:127,width:65,bottom:131,height:50},
+ {x:0,y:86,width:65,bottom:90,height:50},
+ {x:95,y:86,width:21,bottom:90,height:50},
+ {x:116,y:86,width:34,bottom:90,height:18},
+ {x:150,y:86,width:10,bottom:90,height:50}
+];
+const grassGemTiles=new Set([1,4,8,12,15,18]);
+const grassTiles=Array.from({length:20},(_,index)=>{
+ const x=14+(index%5)*10;
+ const y=47+Math.floor(index/5)*10;
+ return {id:'grass-'+index,x,y,width:8,bottom:y+7,height:8,hp:1,hasGem:grassGemTiles.has(index),gemAvailable:false,cutAt:null};
+});
+const villageGate={x:13,y:90,width:7,bottom:108,height:40};
+const approachObjects=[
+ villageGate,
+ {x:98,y:48,width:43,bottom:77,height:40},
+ {x:116,y:109,width:27,bottom:121,height:40}
+];
+const shopObjects=[
+ {x:65,y:77,width:62,bottom:88,height:30},
+ {x:112,y:88,width:15,bottom:102,height:30},
+ {x:16,y:75,width:29,bottom:83,height:30}
+];
+const shopDialogue=document.querySelector('#shop-dialogue');
+const shopLine=document.querySelector('#shop-line');
+const shopOptions=document.querySelector('#shop-options');
+const shopStock=document.querySelector('#shop-stock');
+const potion={id:'potion',label:'Potion',description:'Restores up to one life star.'};
+const grassBow={id:'grass-bow',label:'Grass Bow',cost:10,description:'Fires arrows up to '+grassBowRange+' pixels.',slot:'weapon',weaponClass:'bow',strBonus:1};
+const shopItems=[
+ {...potion,cost:3},
+ grassBow,
+ {id:'grass-shield',label:'Grass Shield',cost:10,description:'A shield woven from tough grass.',slot:'shield',defBonus:1}
+];
+const shopIcons={potion:'potion','emperor-note':'note','grass-bow':'bow','grass-shield':'shield'};
+let stockCursor=0;
+function renderShopStock(message=''){
+ shopLine.textContent=message || ('Buy · '+gems+' gems');
+ shopStock.replaceChildren();
+ shopItems.forEach((item,index)=>{
+  const row=document.createElement('li');
+  row.classList.toggle('selected',index===stockCursor);
+  const name=document.createElement('span'),price=document.createElement('span');
+  name.textContent=item.label;price.textContent=item.cost+' gems';
+  row.append(name,price);shopStock.append(row);
+ });
+}
+function buyShopItem(){
+ const item=shopItems[stockCursor];
+ const owned=inventory.get(item.id);
+ if(item.slot && (owned || chestItems.has(item.id))){renderShopStock('You already own this.');return;}
+ if(gems<item.cost){renderShopStock('Not enough gems.');return;}
+ if(!owned && inventory.size>=16){renderShopStock('Inventory full.');return;}
+ document.dispatchEvent(new CustomEvent('game:inventory-change',{
+  detail:{...item,value:(owned?.value??0)+1}
+ }));
+ gems-=item.cost;
+ document.querySelector('#inventory-gems').textContent=gems;
+ shopDialogue.hidden=true;
+ presentAcquisition(item.id,item.label+' bought',()=>{
+  shopDialogue.hidden=false;
+  renderShopStock();
+ });
+}
+const shopControls=document.querySelector('#shop-controls');
+function shopkeeperInReach(){
+ return inShop && !jump && playerX>=64 && playerX<=106 && playerY>=89 && playerY<=98;
+}
+function showShopDialogue(step){
+ shopStep=step;
+ shopDialogue.hidden=step===null;
+ shopOptions.hidden=step!=='choice';
+ shopStock.hidden=step!=='buy';
+ if(step==='buy'){stockCursor=0;renderShopStock();renderShopControls();return;}
+ if(step===null) return;
+ const lines={
+  hello:'Shopkeeper: Hello!',
+  choice:'Shopkeeper: What can I get for you?',
+  sell:'Shopkeeper: I’m not buying anything today.'
+ };
+ shopLine.textContent=lines[step];
+ renderShopControls();
+ if(step==='choice'){
+  Array.from(shopOptions.children).forEach((option,index)=>option.classList.toggle('selected',index===shopChoice));
+ }
+}
+function renderShopControls(){
+ const a=actionKey('A'),b=actionKey('B');
+ shopControls.textContent=shopStep==='buy'?'↑ / ↓ · '+a+' Buy · '+b+' Back':
+  shopStep==='choice'?'← / → · '+a+' Select · '+b+' Back':
+  shopStep==='hello'?a+' · Continue':a+' / '+b+' · Back';
+}
+function approachLandmark(){
+ if(!millApproach || jump) return '';
+ if(playerX<=30 && Math.abs(playerY-99)<=9) return 'Village Gate';
+ if(playerX>=114 && playerY>=122 && playerY<=132) return 'Service Gate';
+ return '';
+}
+const sluiceChannel={left:74,right:86,top:51,bottom:138};
+const raftStartY=29, raftLength=19, raftSpeed=25;
+const sluiceChest={x:116,y:71,width:26,bottom:86,height:17};
+let raftY=raftStartY,sluiceLastFrame=null,drowningAt=null;
+const bossMaxHp=70, bossMaterializeAt=1400;
+const boss={id:'mill-werewolf',x:115,y:87,width:22,bottom:104,height:32,hp:bossMaxHp,
+ phase:'dormant',elapsed:0,destination:null,nextMove:0,nextSlash:0,nextSpider:0,tell:null,wave:null,
+ spiderCount:0,spidersDefeated:0};
+const bossSpiders=[],bossPotions=[];
+const bossFinalWords=[
+ 'You are stronger than I thought.',
+ 'If you are to return, you must defeat the emperor. Take this.'
+];
+const scentDescription='Track creatures and discover hidden trails by scent.';
+let scentUnlocked=false;
+const acquisitionNotes=[330,440,660];
+function resetSluiceBoss(){
+ Object.assign(boss,{x:115,y:87,bottom:104,hp:bossMaxHp,phase:'dormant',elapsed:0,
+  destination:null,nextMove:0,nextSlash:0,nextSpider:0,tell:null,wave:null,spiderCount:0,spidersDefeated:0});
+ bossSpiders.length=0;
+ bossPotions.length=0;
+}
+function bossControlsLocked(){
+ return sluiceRoom && ['intro','intro-dialogue','last-words','sinking'].includes(boss.phase);
+}
+function startSluiceBoss(){
+ boss.phase='intro';
+ boss.elapsed=0;
+ boss.blastFromX=playerX;
+ boss.blastFromY=playerY;
+ stop();
+ endPunch();
+ unlockEffects();
+ playAttackSound('crack');
+}
+function showBossDialogue(text){
+ wolfDialogue.setAttribute('aria-label','Giant Werewolf');
+ showDiscovery(text);
+}
+function advanceBossDialogue(){
+ if(boss.phase==='intro-dialogue'){
+  boss.phase='battle';
+  boss.elapsed=0;
+  boss.nextMove=0;
+  boss.nextSlash=1400;
+  boss.nextSpider=1800;
+ }else if(boss.line===0){
+  boss.line=1;
+  showBossDialogue(bossFinalWords[1]);
+  return;
+ }else{
+  boss.phase='sinking';
+  boss.elapsed=0;
+ }
+ discoveryOpen=false;
+ wolfDialogue.hidden=true;
+ wolfDialogue.setAttribute('aria-label','Final words');
+ draw(eyesClosed);
+}
+function defeatSluiceBoss(){
+ boss.phase='last-words';
+ boss.line=0;
+ boss.tell=null;
+ boss.wave=null;
+ bossSpiders.length=0;
+ cancelAnimationFrame(jumpFrame);
+ jump=null;
+ standingHeight=0;
+ if(overSluiceWater(playerX) && !onSluiceRaft(playerX,playerY)){
+  playerX=playerX<(sluiceChannel.left+sluiceChannel.right)/2?sluiceChannel.left-1:sluiceChannel.right;
+ }
+ showBossDialogue(bossFinalWords[0]);
+}
+function collectScent(){
+ scentUnlocked=true;
+ queueStorySave();
+ presentAcquisition('scent','Scent learned · '+scentDescription);
+}
+function advanceBoss(elapsed){
+ if(boss.phase==='intro'){
+  boss.elapsed+=elapsed;
+  const travel=Math.min(1,boss.elapsed/475);
+  playerX=Math.round(boss.blastFromX+(40-boss.blastFromX)*travel);
+  playerY=Math.round(boss.blastFromY+(102-boss.blastFromY)*travel);
+  facing='ArrowRight';
+  if(boss.elapsed>=bossMaterializeAt){
+   boss.phase='intro-dialogue';
+   showBossDialogue('You betrayed the clan and you must die for this.');
+  }
+ }else if(boss.phase==='sinking'){
+  boss.elapsed+=elapsed;
+  if(boss.elapsed>=1150){boss.phase='defeated';queueStorySave();}
+ }else if(boss.phase==='battle'){
+  boss.elapsed+=elapsed;
+  updateBossBattle(elapsed);
+ }
+}
+function updateBossBattle(elapsed){
+ const time=boss.elapsed;
+ if(boss.nextSpider<=time){
+  boss.nextSpider=time+3600;
+  if(bossSpiders.filter(spider=>spider.hp>0).length<3){
+   const left=boss.spiderCount++%2===0;
+   const [spider]=createMillSpiders('boss-'+boss.spiderCount,[left?[25,66]:[134,99]]);
+   bossSpiders.push(spider);
+  }
+ }
+ if(boss.tell && time>=boss.tell.until){
+  boss.wave={...boss.tell};
+  boss.tell=null;
+  boss.nextSlash=time+2500+Math.random()*550;
+  playAttackSound('swipe');
+ }
+ if(boss.wave) advanceBossWave(elapsed);
+ if(changingRoom || boss.phase!=='battle') return;
+ if(!boss.tell && time>=boss.nextSlash){
+  const x=boss.x+boss.width/2,y=boss.bottom;
+  const dx=playerX-x,dy=playerY-y;
+  const distance=Math.hypot(dx,dy);
+  boss.tell={x,y,dx:distance?dx/distance:-1,dy:distance?dy/distance:0,until:time+570};
+  return;
+ }
+ if(boss.tell) return;
+ if(time>=boss.nextMove){
+  boss.nextMove=time+650+Math.random()*540;
+  boss.destination={x:104+Math.floor(Math.random()*27),y:89+Math.floor(Math.random()*26)};
+ }
+ if(!boss.destination) return;
+ const dx=boss.destination.x-boss.x,dy=boss.destination.y-boss.bottom;
+ const distance=Math.hypot(dx,dy),step=Math.min(distance,elapsed*.024);
+ if(step===0) return;
+ const x=boss.x+dx*step/distance,y=boss.bottom+dy*step/distance;
+ if(!objectAt(x+boss.width/2,y,false,0,sluiceFixtures)){
+  boss.x=x;boss.y=y-17;boss.bottom=y;
+ }else boss.nextMove=time;
+}
+function advanceBossWave(elapsed){
+ const wave=boss.wave;
+ const steps=Math.max(1,Math.ceil(elapsed*.074/3));
+ for(let i=0;i<steps;i++){
+  wave.x+=wave.dx*elapsed*.074/steps;
+  wave.y+=wave.dy*elapsed*.074/steps;
+  const dx=playerX-wave.x,dy=playerY-wave.y;
+  const forward=dx*wave.dx+dy*wave.dy;
+  const side=dx*wave.dy-dy*wave.dx;
+  if(Math.abs(forward)<=5 && Math.abs(side)<=9 && (jump?.height??0)<7){
+   boss.wave=null;
+   hurtInMill(bossHitHp);
+   return;
+  }
+ }
+ if(wave.x<0 || wave.x>160 || wave.y<43 || wave.y>144) boss.wave=null;
+}
+function nearbyBossPotion(){
+ if(!sluiceRoom || jump || changingRoom || bossControlsLocked()) return null;
+ return bossPotions.find(drop=>Math.abs(playerX-drop.x)<=9 && Math.abs(playerY-drop.y)<=7);
+}
+const sluiceFixtures=[sluiceChest];
+function overSluiceWater(x){return x>=sluiceChannel.left && x<sluiceChannel.right;}
+function onSluiceRaft(x,y){
+ const top=Math.floor(raftY);
+ return overSluiceWater(x) && y>=sluiceChannel.top && y>=top+2 && y<=top+raftLength-2;
+}
+function checkSluiceFooting(){
+ if(sluiceRoom && !jump && overSluiceWater(playerX) && !onSluiceRaft(playerX,playerY)){
+  fallInSluice();
+ }
+}
+function fallInSluice(){
+ if(drowningAt!==null) return;
+ drowningAt=performance.now();
+ defeated=true;
+ playAttackSound('splash');
+ endPunch();
+ stop();
+}
+function advanceSluice(now){
+ if(changingRoom){sluiceLastFrame=null;return;}
+ if(drowningAt!==null){
+  if(now-drowningAt>=750){
+   restoreFullHp();
+   changeRoad('mill');
+  }
+  return;
+ }
+ const elapsed=sluiceLastFrame===null?0:Math.max(0,Math.min(80,now-sluiceLastFrame));
+ sluiceLastFrame=now;
+ advanceBoss(elapsed);
+ if(bossControlsLocked() || changingRoom) return;
+ const oldTop=Math.floor(raftY);
+ const riding=!jump && onSluiceRaft(playerX,playerY);
+ raftY+=raftSpeed*elapsed/1000;
+ if(raftY>=sluiceChannel.bottom+8) raftY=raftStartY;
+ if(riding){
+  const drift=Math.floor(raftY)-oldTop;
+  if(drift<0 || playerY+drift>135){
+   playerY=Math.min(135,playerY+Math.max(0,drift));
+   fallInSluice();
+  }else playerY+=drift;
+ }
+}
+
+function millAction(){
+ if(!inMill || jump || drowningAt!==null || bossControlsLocked()) return '';
+ if(millStorage) return '';
+ if(millVault){
+  if(Math.abs(playerX-23)<=11 && Math.abs(playerY-124)<=7) return 'Mill Engraving';
+  if(!vaultUnlocked){
+   const lever=vaultLevers.find(lever=>Math.abs(playerX-lever.x)<=13 && Math.abs(playerY-104)<=10);
+   if(lever) return 'Lever '+lever.mark;
+   if(Math.abs(playerX-80)<=11 && playerY>=79 && playerY<=86) return 'Locked Grate';
+  }
+  if(vaultUnlocked && !vaultChest.open && Math.abs(playerX-80)<=12 && playerY<=67) return 'Treasure Chest';
+  return '';
+ }
+ if(millPress || millGrain) return '';
+ if(millEntry){
+  if(!millGateOpen && Math.abs(playerX-121)<=16 && playerY>=64 && playerY<=95) return 'Pull the gate lever';
+  if(!millGateOpen && Math.abs(playerX-80)<=10 && playerY<=62) return 'Iron Grate';
+  return '';
+ }
+ if(playerX>=sluiceChest.x-10 && playerX<=sluiceChest.x+sluiceChest.width+10 &&
+    playerY>=sluiceChest.y-8 && playerY<=sluiceChest.bottom+11){
+  if(boss.phase==='dormant') return 'Large Chest';
+  if(boss.phase==='defeated' && !scentUnlocked) return 'Take Scent';
+ }
+ if(!scentUnlocked && Math.abs(playerX-129)<=15 && playerY>=107) return 'Shortcut Door';
+ return '';
+}
+function createMillSpiders(room,positions){
+ return positions.map(([x,y],index)=>({
+  id:room+'-spider-'+(index+1),x,y,width:8,bottom:y+6,height:5,hp:10,hitPaddingX:2,hitPaddingY:1,
+  dx:0,dy:0,ticks:3+index*2,step:0
+ }));
+}
+const spiders=createMillSpiders('mill',[[38,110],[76,87],[118,60]]);
+const pressSpiders=createMillSpiders('press',[[38,112],[103,60]]);
+const vaultSpiders=createMillSpiders('vault',[[28,88],[53,115],[79,89],[105,115],[126,88]]);
+function currentMillSpiders(){
+ return millEntry?spiders:millPress?pressSpiders:millVault?vaultSpiders:sluiceRoom?bossSpiders:[];
+}
+const spiderDirections=[[1,0],[-1,0],[0,1],[0,-1]];
+let spiderHurtUntil=0;
+function checkSpiderContact(){
+ if((!millEntry && !millPress && !millVault && (!sluiceRoom || boss.phase!=='battle')) || changingRoom || drowningAt!==null || performance.now()<spiderHurtUntil || (jump?.height??standingHeight)>=5) return;
+ if(!objectAt(playerX,playerY,false,jump?.height??standingHeight,currentMillSpiders())) return;
+ spiderHurtUntil=performance.now()+1000;
+ hurtInMill();
+}
+function hurtInMill(amount=enemyHitHp){
+ playAttackSound('hit');
+ document.dispatchEvent(new CustomEvent('game:damage',{detail:{amount}}));
+ if(defeated){
+  cancelAnimationFrame(jumpFrame);
+  jump=null;
+  restoreFullHp();
+  changeRoad(sluiceRoom?'mill':millVault?'mill-vault':millPress?'mill-press':'mill-entry');
+ }
+}
+function updateMillSpiders(){
+ if((!millEntry && !millPress && !millVault && (!sluiceRoom || boss.phase!=='battle')) || changingRoom || drowningAt!==null) return;
+ for(const spider of currentMillSpiders()){
+  if(spider.hp===0) continue;
+  if(--spider.ticks===0){
+   if(spider.dx || spider.dy){
+    spider.dx=spider.dy=0;
+    spider.ticks=2+Math.floor(Math.random()*3);
+   }else{
+    [spider.dx,spider.dy]=spiderDirections[Math.floor(Math.random()*spiderDirections.length)];
+    spider.ticks=3+Math.floor(Math.random()*4);
+   }
+  }
+  if(!spider.dx && !spider.dy) continue;
+  const x=spider.x+spider.dx*2, y=spider.y+spider.dy*2;
+  if(x<16 || x+spider.width>146 || y<53 || y+6>134 ||
+   (sluiceRoom && x<sluiceChannel.right && x+spider.width>sluiceChannel.left) ||
+   roomObjects().some(prop=>x<prop.x+prop.width && x+spider.width>prop.x &&
+    y<=prop.bottom && y+6>=prop.y)){
+   spider.dx=spider.dy=0;
+   spider.ticks=2+Math.floor(Math.random()*3);
+   continue;
+  }
+  spider.x=x;
+  spider.y=y;
+  spider.bottom=y+6;
+  spider.step=1-spider.step;
+ }
+ checkSpiderContact();
+}
+const millEntryObjects=[
+ {x:26,y:55,width:32,bottom:73,height:18},
+ {x:99,y:104,width:39,bottom:120,height:16}
+];
+const emperorNote={id:'emperor-note',label:'Note',description:'A warning bearing the Emperor’s orders.',value:1};
+const emperorNoteText='The Emperor says you must find a way to take away his sense of smell for with it he can track us all.';
+const grainCrates=[[26,88],[108,90],[116,116]].map(([x,y],index)=>({
+ id:'grain-crate-'+(index+1),x,y,width:14,bottom:y+11,height:12,hp:10
+}));
+const grainFixtures=[
+ {x:60,y:50,width:38,bottom:73,height:20},
+ {x:18,y:56,width:25,bottom:70,height:16}
+];
+const grainObjects=[...grainFixtures,...grainCrates];
+const millDrop={potion:null,vaultPotion:null,note:null};
+
+const vaultGem={x:0,y:0,value:5,available:false};
+let potionDropped=false, readingNote=null;
+function nearbyMillDrop(){
+ if(jump || standingHeight || changingRoom) return null;
+ const drop=millEntry?millDrop.potion:millVault?millDrop.vaultPotion:millGrain?millDrop.note:null;
+ return drop && Math.abs(playerX-drop.x)<=13 && Math.abs(playerY-drop.y)<=10?drop:null;
+}
+function readEmperorNote(source){
+ readingNote=source;
+ wolfDialogue.setAttribute('aria-label','Note');
+ showDiscovery(emperorNoteText);
+}
+function closeEmperorNote(){
+ const found=readingNote==='floor';
+ readingNote=null;
+ wolfDialogue.setAttribute('aria-label','Final words');
+ discoveryOpen=false;
+ wolfDialogue.hidden=true;
+ if(found && inventory.size>=16){showInfo('Inventory full');return;}
+ if(found){
+  document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:emperorNote}));
+  millDrop.note=null;
+  presentAcquisition(emperorNote.id,'Note obtained');
+ }else draw(eyesClosed);
+}
+const pressWalls=[
+ {x:6,y:84,width:57,bottom:99,height:32},
+ {x:97,y:84,width:57,bottom:99,height:32}
+];
+let pressTick=0,pressHit=false;
+function pressIsDown(){return pressTick>=9 && pressTick<=11;}
+function checkPressContact(){
+ if(!millPress || changingRoom || !pressIsDown() || pressHit) return;
+ if(playerX+5<=63 || playerX-5>=97 || playerY<83 || playerY>100) return;
+ pressHit=true;
+ hurtInMill();
+}
+function updateMillPress(){
+ if(!millPress || changingRoom) return;
+ pressTick=(pressTick+1)%16;
+ if(!pressIsDown()) pressHit=false;
+ checkPressContact();
+}
+const vaultLevers=[{x:33,mark:'I'},{x:80,mark:'II'},{x:127,mark:'III'}];
+const vaultSequence=['I','III','II'];
+const vaultWalls=[
+ {x:6,y:69,width:59,bottom:78,height:32},
+ {x:95,y:69,width:59,bottom:78,height:32}
+];
+const vaultGrate={x:65,y:69,width:30,bottom:78,height:32};
+const vaultChest={x:72,y:53,width:16,bottom:62,height:12,open:false};
+let vaultProgress=0,vaultUnlocked=false;
+function pullVaultLever(mark){
+ if(mark!==vaultSequence[vaultProgress]){
+  vaultProgress=0;
+  queueStorySave();
+  showInfo('The levers reset.');
+  return;
+ }
+ vaultProgress++;
+ vaultUnlocked=vaultProgress===vaultSequence.length;
+ queueStorySave();
+ playAttackSound('crack');
+ showInfo(vaultUnlocked?'The vault grate rises.':'Gears engaged · '+vaultProgress+'/'+vaultSequence.length);
+ draw(eyesClosed);
+}
+function openVaultChest(){
+ if(inventory.size>=16){showInfo('Inventory full');return;}
+ document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:strawHelmet}));
+ vaultChest.open=true;
+ presentAcquisition(strawHelmet.id,'Straw Helmet obtained');
+}
+const storageSacks={x:25,y:62,width:33,bottom:78,height:17};
+const storageShelf={x:98,y:52,width:42,bottom:70,height:22};
+const storageRewards=[5,5,'star',null,null,null,null,null,null,null];
+for(let i=storageRewards.length-1;i>0;i--){
+ const j=Math.floor(Math.random()*(i+1));
+ [storageRewards[i],storageRewards[j]]=[storageRewards[j],storageRewards[i]];
+}
+const storageCrates=[[62,53],[80,53],[18,83],[45,92],[104,83],[127,86],[35,109],[56,116],[102,112],[129,112]]
+ .map(([x,y],index)=>({
+  id:'storage-crate-'+(index+1),x,y,width:14,bottom:y+11,height:12,hp:10,
+  reward:storageRewards[index]
+ }));
+const millStorageObjects=[storageSacks,storageShelf,...storageCrates];
+const storageDrops=[];
+const storageStairLip=104,shortcutStairLip=126;
+let storageStairsOpen=false;
+function breakStorageCrate(crate){
+ if(crate.reward!==null){
+  storageDrops.push({x:crate.x+7,y:crate.bottom,available:true,reward:crate.reward});
+ }
+ if(!storageStairsOpen && storageCrates.every(box=>box.hp===0)){
+  storageStairsOpen=true;
+  playPickupSound([392,523,659,784,1047]);
+  showInfo('A stairway opens!');
+ }
+}
+function roomObjects(){
+ if(millStorage) return millStorageObjects;
+ if(millVault) return vaultUnlocked?[...vaultWalls,vaultChest]:[...vaultWalls,vaultGrate,vaultChest];
+ if(millPress) return pressWalls;
+ if(millGrain) return grainObjects;
+ if(millEntry) return millEntryObjects;
+ if(sluiceRoom) return sluiceFixtures;
+ if(inShop) return shopObjects;
+ if(millApproach) return approachObjects;
+ if(ditch) return [cart];
+ if(!yard) return furniture;
+ return gateOpen?[woodpile,...yardFence]:[woodpile,gate,southGate,...yardFence];
+}
+function gateInReach(){
+ return yard && !ditch && !gateOpen && !jump &&
+  Math.abs(playerX-gateSwitch.x)<=8 && Math.abs(playerY-gateSwitch.y)<=7;
+}
+function changeRoom(){
+ changingRoom=true;
+ unlockEffects();
+ stop();
+ endPunch();
+ roomFade.classList.add('dark');
+ setTimeout(()=>{
+  yard=!yard;
+  if(yard && yardThought.shownAt===null) yardThought.readyAt=performance.now()+1000;
+  playerX=80;
+  playerY=yard?55:129;
+  facing=yard?'ArrowDown':'ArrowUp';
+  clearTimeout(infoTimer);
+  infoMessage='';
+  syncOutdoorAudio();
+  draw(eyesClosed);
+  roomFade.classList.remove('dark');
+  setTimeout(()=>{changingRoom=false;},160);
+  queueStorySave();
+ },170);
+}
+const crateGem={x:104,y:125,value:5,available:false};
+const dagger={x:94,y:70,available:true};
+const daggerItem={id:'dagger',label:'Dagger',value:1,description:'A short, worn blade.',strBonus:1,slot:'weapon',weaponClass:'dagger'};
+function daggerInReach(){
+ return !yard && dagger.available && screen==='play' && !jump && standingHeight===0 &&
+  Math.abs(playerX-dagger.x)<=8 && Math.abs(playerY-dagger.y)<=6;
+}
+function nearbyFallenWolf(){
+ if(!yard || ditch || millApproach || inShop || inMill || jump) return -1;
+ return fallenWolves.findIndex(([x,y])=>Math.abs(playerX-(x+7))<=12 && Math.abs(playerY-y)<=8);
+}
+function nearCartArmor(){
+ return ditch && !armorFound && !jump && playerX>=cart.x-10 &&
+  playerX<=cart.x+cart.width+6 && playerY>=cart.y-6 && playerY<=cart.bottom+7;
+}
+function showDiscovery(message){
+ discoveryOpen=true;
+ stop();
+ discoveryMessage=message;
+ renderDiscoveryMessage();
+ wolfDialogue.hidden=false;
+ draw(eyesClosed);
+}
+function renderDiscoveryMessage(){
+ wolfDialogue.firstElementChild.textContent=discoveryMessage.replace('{Select}',actionKey('Select'));
+}
+function findArmor(){
+ if(inventory.size>=16){showInfo('Inventory full');return;}
+ armorFound=true;
+ document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:strawArmor}));
+ presentAcquisition(strawArmor.id,'Found Straw Armor');
+}
+function awardGems(value){
+ gems+=value;
+ queueStorySave();
+ document.querySelector('#inventory-gems').textContent=gems;
+ playPickupSound([880,1320]);
+}
+function plankInReach(){
+ return ditch && !jump && !plankTaken && Math.abs(playerX-127)<=8 && Math.abs(playerY-85)<=7;
+}
+function washoutInReach(){
+ return ditch && !jump && !bridgeBuilt && Math.abs(playerX-80)<=9 && playerY>=101 && playerY<=108;
+}
+function refreshInfo(){
+ const now=performance.now();
+ if(washoutInReach() && riverThought.readyAt===null && screen==='play' && !changingRoom && !discoveryOpen){
+  riverThought.readyAt=now;
+ }
+ const thought=ditch?(bridgeBuilt?null:riverThought):yard?(gateOpen?null:yardThought):innThought;
+ const active=thought && !changingRoom && !discoveryOpen && screen==='play';
+ if(active && thought.readyAt!==null && thought.shownAt===null && now>=thought.readyAt){
+  thought.shownAt=now;
+  travelerThought.textContent=thought.text;
+ }
+ travelerThought.hidden=!active || thought.shownAt===null || now-thought.shownAt>=4000;
+ const body=nearbyFallenWolf();
+ if(body!==dismissedWolf) dismissedWolf=-1;
+ const landmark=millAction() || approachLandmark();
+ const drop=nearbyMillDrop() || nearbyBossPotion();
+ const a=' · '+actionKey('A');
+ const message=(raisedItem?raisedItem.message+a:'') || infoMessage || (drop?drop.item.label+a:'') || (shopkeeperInReach()?'Talk'+a:'') || (landmark?landmark+a:'') || (!discoveryOpen && body>=0 && body!==dismissedWolf?'Dead Werewolf':'') || (gateInReach()?'Gate switch'+a:daggerInReach()?'Dagger'+a:plankInReach()?'Wooden Plank'+a:washoutInReach() && plankTaken && inventory.has(woodenPlank.id)?'Lay Wooden Plank'+a:nearCartArmor()?'Search'+a:chestInReach()?'Storage Chest'+a:'');
+ infoBox.textContent=message;
+ infoBox.hidden=(!raisedItem && shopStep!==null) || discoveryOpen || !message || screen!=='play';
+}
+function showInfo(message){
+ clearTimeout(infoTimer);
+ infoMessage=message;
+ refreshInfo();
+ infoTimer=setTimeout(()=>{infoMessage="";refreshInfo();},3000);
+}
+function presentAcquisition(id,message,after=null){
+ clearTimeout(infoTimer);
+ infoMessage='';
+ raisedItem={id,message,after};
+ facing='ArrowDown';
+ stop();
+ unlockEffects();
+ playPickupSound(acquisitionNotes);
+}
+function dismissAcquisition(){
+ const {after}=raisedItem;
+ raisedItem=null;
+ sluiceLastFrame=null;
+ if(after) after();
+ draw(eyesClosed);
+}
+function traceLifeStar(x,y,radius){
+ ctx.beginPath();
+ for(let point=0;point<12;point++){
+  const angle=point*Math.PI/6-Math.PI/2;
+  const length=point%2?radius*4/7:radius;
+  const px=x+Math.cos(angle)*length;
+  const py=y+Math.sin(angle)*length;
+  if(point===0) ctx.moveTo(px,py);
+  else ctx.lineTo(px,py);
+ }
+ ctx.closePath();
+}
+function drawLife(){
+ const stars=Math.min(10,lifeStars), hp=currentHp();
+ for(let slot=0;slot<stars;slot++){
+  const left=7+slot%5*9, top=7+Math.floor(slot/5)*9;
+  const fill=Math.max(0,Math.min(hpPerStar,hp-slot*hpPerStar))/hpPerStar;
+  ctx.save();
+  rect(left,top,8,8,0);
+  traceLifeStar(left+4,top+4,3.5);
+  ctx.strokeStyle=colors[2];
+  ctx.stroke();
+  ctx.clip();
+  rect(left,top,Math.round(8*fill),8,3);
+  ctx.restore();
+ }
+}
+function collectGem(){
+ if(millApproach && (jump?.height??standingHeight)===0){
+  const tile=grassTiles.find(tile=>tile.gemAvailable &&
+   Math.abs(playerX-(tile.x+4))<=4 && Math.abs(playerY-(tile.y+4))<=4);
+  if(tile){
+   tile.gemAvailable=false;
+   awardGems(1);
+   showInfo('+1 Gem');
+  }
+ }
+ if(millStorage && (jump?.height??standingHeight)===0){
+  for(const drop of storageDrops){
+   if(!drop.available || Math.abs(playerX-drop.x)>5 || Math.abs(playerY-drop.y)>5) continue;
+   drop.available=false;
+   if(drop.reward==='star'){
+    lifeStars++;
+    queueStorySave();
+    presentAcquisition('life-star','Max Life +1 Star');
+   }else{
+    awardGems(drop.reward);
+    showInfo('+'+drop.reward+' Gems');
+   }
+  }
+ }
+ const gem=millVault?vaultGem:!yard?crateGem:null;
+ if(!gem?.available || (jump?.height??standingHeight)>0) return;
+ if(Math.abs(playerX-gem.x)>5 || Math.abs(playerY-gem.y)>5) return;
+ gem.available=false;
+ awardGems(gem.value);
+ showInfo('+'+gem.value+' Gems');
+}
+document.addEventListener('game:damage',event=>{
+ if(screen!=='play') return;
+ const amount=event.detail?.amount??enemyHitHp;
+ if(defeated || !Number.isFinite(amount) || amount<=0) return;
+ defeated=amount>=currentHp();
+ missingHp+=amount;
+ damageFlashUntil=performance.now()+300;
+ draw(eyesClosed);
+});
+const chest={id:'storage-chest',x:13,y:128,width:20,bottom:135,height:18};
+const chestItems=new Map();
+let chestLid=0, chestView=false, chestNotice='';
+function chestInReach(){
+ return !yard && screen==='play' && !jump && standingHeight===0 &&
+  playerX>=chest.x-7 && playerX<=chest.x+chest.width+7 &&
+  playerY>=chest.y-2 && playerY<=chest.bottom+3;
+}
+function drawChest(){
+ const x=chest.x,y=chest.bottom;
+ rect(x,y-7,20,8,0);rect(x+1,y-6,18,6,2);
+ const lidHeight=4+chestLid*2;
+ rect(x,y-7-lidHeight,20,lidHeight,0);
+ rect(x+1,y-6-lidHeight,18,2,3);
+ if(chestLid) rect(x+2,y-9,16,3,1);
+ rect(x+9,y-7,3,4,0);rect(x+10,y-6,1,2,3);
+}
+function openChest(){
+ stop();
+ chestLid=1;
+ draw(eyesClosed);
+ setTimeout(()=>{
+  chestLid=2;
+  draw(eyesClosed);
+  setTimeout(()=>{
+   chestView=false;
+   inventoryCursor=0;
+   setScreen('inventory');
+  },170);
+ },100);
+}
+const crate={id:"crate",x:99,y:119,width:10,bottom:125,height:10,platform:true,seatY:115,broken:false,hp:10};
+const fragments=[[-9,-3,3,2],[-5,4,4,2],[0,-5,2,3],[4,3,4,2],[8,-2,3,2],[11,2,2,1]];
+let debrisElapsed=0, debrisFrame=0, debrisPrevious=null;
+const scatterTime=280, restTime=1000, flashTime=400;
+const debrisDuration=scatterTime+restTime+flashTime;
+let punching=false, punchTimer, jabTimer, jabFrame=0;
+const weaponAttacks={dagger:{windup:65,recovery:125,reach:13},bow:{windup:170,recovery:230,reach:grassBowRange}};
+let arrowShot=null, visualFrame=null;
+const damageableCharacters=new Map();
+// Characters register their floor bounds, height, and hit points here.
+document.addEventListener('game:damageable-register',event=>{
+ const target=event.detail;
+ if(target?.id && ['x','y','width','bottom','height','hp'].every(key=>Number.isFinite(target[key]))){
+  damageableCharacters.set(target.id,{...target});
+ }
+});
+let equippedItem=null;
+const jumpDuration=1050, jumpPeak=16;
+let standingHeight=0;
+let jump=null, jumpFrame=0, lastJumpFrame=null;
+let playerX=millStorage?23:inMill && !millGrain && !millPress && !millVault?21:80, playerY=millStorage?116:millGrain || millPress || millVault?127:inMill?102:yard?51:105, eyesClosed=false;
+let facing=millGrain || millPress || millVault?"ArrowUp":inMill?"ArrowRight":"ArrowDown";
+let stride=0, steps=0, idleTimer;
+let fireFrame=0, fireTimer;
+function draw(blink){
+ ctx.save();
+ if(sluiceRoom && boss.phase==='intro' && boss.elapsed<475){
+  rect(0,0,160,144,0);
+  ctx.translate(Math.round(Math.sin(boss.elapsed*.13)*3),Math.round(Math.sin(boss.elapsed*.19)*2));
+ }
+ if(millStorage) drawMillStorage();
+ else if(millVault) drawVaultRoom();
+ else if(millPress) drawPressRoom();
+ else if(millGrain) drawGrainRoom();
+ else if(millEntry) drawMillEntry();
+ else if(inMill) drawMill();
+ else if(inShop) drawMillShop(blink);
+ else if(millApproach) drawMillApproach();
+ else if(ditch) drawDitch();
+ else if(yard) drawYard();
+ else{
+ rect(0,0,160,144,0);
+ rect(5,5,150,53,2);
+ for(let y=9;y<47;y+=8){rect(5,y,150,1,1);for(let x=10+(y%16);x<154;x+=16)rect(x,y,1,8,1)}
+ rect(5,46,150,13,1);
+ for(let x=8;x<155;x+=7)rect(x,48,1,8,2);
+ rect(5,58,150,81,2);
+ for(let y=59;y<139;y+=8){rect(5,y,150,1,1);for(let x=13+(y%16);x<154;x+=24)rect(x,y,1,8,1)}
+ for(const x of [5,49,106,151]){rect(x,5,4,53,0);rect(x+1,5,1,49,1)}
+ for(const x of [21,124]){rect(x,17,15,19,0);rect(x+2,19,11,14,3);rect(x+7,18,1,16,1);rect(x+2,25,11,1,1);rect(x-1,35,17,2,0)}
+ rect(65,27,30,30,0);rect(67,25,26,5,1);rect(70,32,20,22,1);rect(73,36,14,17,0);rect(74,51,12,2,2);if(fireFrame===0){
+  rect(77,43,7,8,2);rect(79,41,3,9,3);rect(76,46,3,4,3);
+ }else{
+  rect(76,45,9,6,2);rect(81,42,3,8,3);rect(77,44,2,6,3);
+ }
+ rect(56,75,48,44,0);rect(58,77,44,40,1);rect(60,79,40,36,2);rect(62,81,36,32,1);
+ for(let y=84;y<111;y+=5){rect(63,y,2,2,3);rect(95,y,2,2,3)}
+ for(const x of [13,119]){
+   rect(x+2,79,3,12,0);rect(x+21,79,3,12,0);rect(x,73,26,9,0);rect(x+1,74,24,5,2);rect(x+4,75,17,1,3);
+   rect(x+6,70,4,5,0);rect(x+7,70,2,1,3);rect(x+17,69,3,5,0);rect(x+18,70,1,2,3);
+   rect(x+7,98,12,10,0);rect(x+8,99,10,6,2);
+ }
+ if(!crate.broken){
+  const {x,seatY:y}=crate;
+  rect(x+1,y-2,8,1,0);
+  rect(x,y-1,10,3,0);
+  rect(x+1,y-1,8,2,3);
+  rect(x+1,y+1,8,1,2);
+  rect(x,y+2,10,9,0);
+  rect(x+1,y+3,6,7,2);
+  rect(x+7,y+3,2,7,1);
+  for(let i=0;i<5;i++) rect(x+1+i,y+8-i,1,2,1);
+ }
+ if(crate.broken && debrisElapsed<debrisDuration) drawDebris();
+ drawGroundGem(crateGem);
+ drawChest();
+ drawBloodPool();
+ if(dagger.available) drawDagger(dagger.x,dagger.y,true);
+ rect(68,134,24,6,0);rect(70,134,20,3,1);rect(73,136,14,2,2);
+ }
+ if(sluiceRoom){
+  drawMillSpiders(bossSpiders);
+  for(const drop of bossPotions) drawMillDrop(drop);
+  drawSluiceBoss();
+  drawChestBlast();
+ }
+ if(millVault) drawVaultActors(blink);
+ else if(drowningAt!==null) drawDrowningTraveler(blink);
+ else drawTraveler(blink);
+ if(sluiceRoom && playerY<=sluiceChest.bottom) drawSluiceChest();
+ if(arrowShot) drawFlyingArrow();
+ if(millPress && playerY<=100) drawPressForeground();
+ ctx.restore();
+ drawLife();
+ drawMillRoomTitle();
+ ctx.save();
+ ctx.font='8px monospace';
+ ctx.textBaseline='top';
+ const count=String(gems);
+ const left=151-Math.ceil(ctx.measureText(count).width);
+ rect(left-11,7,162-left,11,0);
+ rect(left-8,10,5,3,2);
+ rect(left-7,9,3,5,3);
+ ctx.fillStyle=colors[3];
+ ctx.fillText(count,left,9);
+ ctx.restore();
+ refreshInfo();
+ if(screen==='play' && (ditch || millPress || sluiceRoom || arrowShot || performance.now()<damageFlashUntil) && visualFrame===null){
+  visualFrame=requestAnimationFrame(refreshAnimatedRoom);
+ }
+}
+const scentWavePixels=[[0,7],[1,6],[2,5],[3,5],[4,5],[5,4],[6,3],[6,2],[7,1],[8,0]];
+function drawScentSymbol(target,x,y){
+ const previous=target.fillStyle;
+ target.fillStyle=colors[3];
+ for(const [dx,dy] of scentWavePixels){
+  target.fillRect(x+dx,y+dy,1,1);
+  target.fillRect(x+dx+2,y+dy+3,1,1);
+ }
+ target.fillStyle=previous;
+}
+function drawRaisedItem(id){
+ if(id==='scent') drawScentSymbol(ctx,84,73);
+ else if(id===strawArmor.id) drawStrawArmor(ctx,84,77);
+ else if(id===strawHelmet.id) drawStrawHelmet(ctx,81,72);
+ else if(id==='dagger') drawDagger(88,85,false);
+ else if(id===potion.id || id===emperorNote.id) drawMillDrop({x:88,y:83,item:id===potion.id?potion:emperorNote});
+ else if(id===woodenPlank.id){
+  for(let i=0;i<11;i++) rect(83+i,83-Math.floor(i/2),1,4,i%3===0?2:3);
+ }else if(id===grassBow.id){
+  rect(85,74,3,1,3);rect(88,75,2,2,3);rect(90,77,1,4,3);
+  rect(88,81,2,2,3);rect(85,83,3,1,3);rect(85,75,1,8,2);
+ }else if(id==='grass-shield'){
+  rect(83,75,11,2,0);rect(82,77,13,5,0);rect(84,82,9,2,0);
+  rect(84,77,9,5,2);rect(87,77,3,6,3);rect(87,84,3,1,0);
+ }else if(id==='life-star'){
+  ctx.save();traceLifeStar(88,79,5);ctx.fillStyle=colors[3];ctx.strokeStyle=colors[0];
+  ctx.fill();ctx.stroke();ctx.restore();
+ }
+}
+function drawTraveler(blink){
+ rect(playerX-9,playerY+1,18,3,0);rect(playerX-5,playerY+2,10,1,1);
+ ctx.save();
+ const blastLift=sluiceRoom && boss.phase==='intro' && boss.elapsed<475
+  ?Math.sin(boss.elapsed/475*Math.PI)*18:0;
+ ctx.translate(0,-Math.round((jump?.height??standingHeight)+blastLift));
+ const flashLeft=damageFlashUntil-performance.now();
+ if(flashLeft>0 && Math.floor(flashLeft/65)%2===0) ctx.globalAlpha=.35;
+ if(jabFrame && equippedItem!=='grass-bow' && facing==='ArrowUp') drawJab();
+ if(punching && facing==='ArrowUp') drawRearPunch();
+ ctx.save();
+ ctx.translate(playerX-80,playerY-105);
+ if(raisedItem){
+  drawFront(blink);
+  drawFeet();
+  drawRaisedItem(raisedItem.id);
+ }else if(facing==='ArrowLeft' || facing==='ArrowRight'){
+  if(facing==='ArrowLeft'){
+   ctx.translate(160,0);
+   ctx.scale(-1,1);
+  }
+  drawProfile(blink);
+ }else{
+  if(facing==='ArrowUp') drawBack();
+  else drawFront(blink);
+  drawFeet();
+ }
+ if(armorEquipped) drawStrawArmor(ctx,76,94);
+ ctx.restore();
+ if(helmetEquipped) drawStrawHelmet(ctx,playerX-7,playerY-23,facing);
+ if(punching && (facing==='ArrowLeft' || facing==='ArrowRight')) drawPunch();
+ if(jabFrame && equippedItem!=='grass-bow' && facing!=='ArrowUp') drawJab();
+ if(jabFrame && equippedItem==='grass-bow') drawBow();
+ ctx.restore();
+}
+function refreshAnimatedRoom(now){
+ visualFrame=null;
+ if(screen!=='play') return;
+ if(!raisedItem && sluiceRoom) advanceSluice(now);
+ if(!raisedItem && arrowShot && !bossControlsLocked() && !changingRoom) advanceFlyingArrow(now);
+ draw(eyesClosed);
+}
+function drawDrowningTraveler(blink){
+ const progress=Math.min(1,Math.max(0,(performance.now()-drowningAt)/750));
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(0,0,160,playerY+2);
+ ctx.clip();
+ ctx.translate(0,Math.floor(progress*29));
+ drawTraveler(blink);
+ ctx.restore();
+ const spread=4+Math.floor(progress*10);
+ rect(playerX-spread,playerY,spread*2,1,2);
+ rect(playerX-spread+2,playerY+3,spread*2-4,1,3);
+}
+function drawMillRoomTitle(){
+ if(!inMill) return;
+ const title=millEntry?'Mill Entrance':millGrain?'Grain Room':millPress?'Press Room':
+  millVault?'Mill Vault':millStorage?'Mill Storage':'Sluice Room';
+ ctx.save();
+ ctx.font='7px monospace';
+ ctx.textBaseline='top';
+ const width=Math.ceil(ctx.measureText(title).width);
+ const left=Math.floor((160-width)/2);
+ rect(left-4,7,width+8,10,0);
+ rect(left-3,17,width+6,1,2);
+ ctx.fillStyle=colors[3];
+ ctx.fillText(title,left,9);
+ ctx.restore();
+}
+function drawYard(){
+ rect(0,0,160,144,0);
+ rect(5,36,150,103,1);
+ rect(62,43,37,96,2);
+ for(let i=0;i<68;i++){
+  const x=7+(i*43)%146,y=48+(i*31)%89;
+  rect(x,y,2+i%3,1,(x>62 && x<99)?1:2);
+ }
+ rect(48,10,64,35,0);rect(54,19,52,26,2);
+ for(let y=23;y<=43;y+=5) rect(54,y,52,1,1);
+ rect(70,24,20,22,0);rect(73,27,14,18,1);rect(74,44,12,2,3);rect(72,46,16,2,1);
+ for(const fence of yardFence){
+  rect(fence.x,fence.y-2,fence.width,6,0);
+  rect(fence.x,fence.y-1,fence.width,2,2);
+  if(fence.height>18){
+   for(let x=fence.x+2;x<fence.x+fence.width;x+=8) rect(x,fence.y-7,2,12,0);
+  }
+ }
+ for(const barrier of [gate,southGate]){
+  const y=barrier.y;
+  if(!gateOpen){
+   rect(65,y-7,30,12,0);rect(67,y-5,26,7,1);
+   for(let x=68;x<93;x+=4) rect(x,y-5,2,7,2);
+   rect(66,y-1,28,2,3);
+  }else{
+   rect(64,y-6,3,12,0);rect(93,y-6,3,12,0);
+  }
+ }
+ rect(gateSwitch.x-3,gateSwitch.y-3,7,6,0);
+ rect(gateSwitch.x-2,gateSwitch.y-2,5,3,2);
+ rect(gateSwitch.x+(gateOpen?1:-1),gateSwitch.y-5,2,5,3);
+ for(const [x,y] of fallenWolves) drawFallenWolf(x,y);
+ if(!gemsFound) drawSparkle(53,97);
+ for(let y=63;y<=75;y+=4){
+  rect(119,y,27,4,0);rect(121,y,21,2,2);rect(142,y,3,3,3);
+ }
+ const bloodTrail=[
+  [79,48,3,5],[81,53,4,2],[83,57,2,4],[81,62,3,5],
+  [78,68,4,2],[77,71,2,4],[79,76,3,3],[81,80,4,4],
+  [82,91,3,5],[80,96,4,3],[78,101,3,5],[79,106,4,2],
+  [82,110,2,4],[83,115,4,3],[81,119,3,5],[78,124,4,2],
+  [77,128,2,4],[79,133,3,5],[80,139,3,5]
+ ];
+ ctx.fillStyle='#84342e';
+ for(const [x,y,width,height] of bloodTrail) ctx.fillRect(x,y,width,height);
+ ctx.fillStyle='#542421';
+ for(const [x,y,width,height] of [[78,49,1,3],[84,54,1,2],[77,69,1,2],
+  [84,81,1,2],[84,93,1,3],[77,102,1,3],[86,116,1,2],[78,135,1,2]]){
+  ctx.fillRect(x,y,width,height);
+ }
+ const rain=Math.floor(performance.now()/80);
+ for(let i=0;i<45;i++){
+  const x=(i*37+157-rain%160)%153+5;
+  const y=(i*29+rain*5)%130+5;
+  rect(x,y,1,3,2);
+ }
+}
+function drawSparkle(x,y){
+ if(Math.floor(performance.now()/350)%2) return;
+ rect(x-2,y,5,1,3);rect(x,y-2,1,5,3);
+}
+function drawFallenWolf(x,y){
+ rect(x,y,16,5,0);rect(x+4,y-2,9,5,1);
+ rect(x-2,y-2,6,5,0);rect(x-1,y-4,2,3,0);rect(x+2,y-3,2,2,0);
+ rect(x-1,y,3,1,2);
+ rect(x+5,y+4,5,2,0);rect(x+12,y+4,5,2,0);
+}
+function drawWashoutWater(){
+ rect(5,109,150,18,0);
+ rect(5,111,150,14,1);
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(5,110,150,16);
+ ctx.clip();
+ const travel=Math.floor(performance.now()/58);
+ for(let row=0;row<3;row++){
+  const y=112+row*5;
+  const phase=(travel*(row===1?2:1)+row*9)%23;
+  for(let x=-17+phase;x<155;x+=23){
+   rect(x,y,9,1,2);rect(x+9,y+1,3,1,3);
+  }
+ }
+ ctx.restore();
+}
+function drawDitch(){
+ rect(0,0,160,144,0);
+ rect(5,5,150,134,1);rect(55,5,50,134,2);
+ for(let i=0;i<64;i++){
+  const x=7+i*37%146,y=7+i*23%130;
+  rect(x,y,2,1,x>55 && x<105?1:0);
+ }
+ ctx.fillStyle='#84342e';
+ for(const [x,y] of [[80,5],[81,14],[82,24],[85,35],[88,46],[91,57],[94,65]]) ctx.fillRect(x,y,3,4);
+ drawWashoutWater();
+ if(bridgeBuilt){
+  rect(72,106,16,24,0);rect(73,107,14,21,2);
+  rect(73,107,2,21,3);rect(85,109,2,18,1);
+  rect(77,110,1,9,1);rect(80,115,1,12,1);rect(83,109,1,5,3);
+  rect(78,120,3,3,1);rect(79,121,1,1,2);
+  rect(74,128,13,1,1);
+ }
+ rect(96,56,25,18,0);rect(98,58,20,11,2);
+ for(let y=60;y<72;y+=4) rect(99,y,18,1,1);
+ rect(112,69,11,11,0);rect(114,71,7,7,1);rect(116,73,3,3,2);
+ if(!plankTaken && !bridgeBuilt){
+  rect(117,84,22,6,0);rect(118,85,20,3,2);
+  rect(118,85,20,1,3);rect(119,88,19,1,1);
+  rect(120,86,6,1,1);rect(128,87,8,1,1);
+  rect(128,86,2,1,0);rect(137,86,1,2,1);
+ }
+ if(wolf.hp===0 && wolfLine<0){
+  drawFallenWolf(wolf.x-3,wolf.y+4);
+ }else{
+  const x=wolf.x,y=wolf.y;
+  rect(x-2,y-2,17,9,0);rect(x+1,y,12,5,1);
+  const breath=wolf.hp>0?Math.sin(performance.now()/490):0;
+  const headX=x+Math.round(breath),headY=y-Math.round(breath);
+  rect(headX-3,headY-4,8,7,0);rect(headX-2,headY-7,2,4,0);rect(headX+2,headY-6,2,3,0);
+  rect(headX-2,headY-2,2,1,3);rect(headX-4,headY,4,2,2);
+  if(wolf.hp>0 && wolf.phase){
+   const reach=wolf.phase===1?4:wolf.ticks===4?12:0;
+   for(let step=1;step<=reach;step++){
+    rect(x+6+wolf.swipeX*step,y+4+wolf.swipeY*step,2,2,step>reach-3?3:1);
+   }
+  }
+  if(wolf.hp>0){rect(x-1,y-16,14,4,0);rect(x,y-15,Math.ceil(wolf.hp*12/32),2,3);}
+ }
+ rect(95,65,7,13,0);rect(96,66,3,10,2);
+ if(!armorFound) drawSparkle(110,61);
+ const rain=Math.floor(performance.now()/80);
+ for(let i=0;i<38;i++) rect((i*37+157-rain%160)%153+5,(i*29+rain*5)%134+5,1,3,2);
+ if(ghostStarted!==null){
+  const progress=(performance.now()-ghostStarted)/ghostDuration;
+  if(progress<1){
+   const x=wolf.x+Math.round(3*Math.sin(progress*Math.PI));
+   const y=wolf.y-Math.round(32*progress);
+   ctx.save();
+   ctx.globalAlpha=Math.min(1,progress*12)*(1-progress);
+   rect(x,y-2,2,4,3);rect(x+6,y-3,2,5,3);
+   rect(x,y,8,6,3);rect(x-2,y+3,5,4,3);
+   rect(x+3,y+6,5,6,3);rect(x+5,y+12,2,3,3);
+   rect(x+1,y+2,1,1,0);rect(x+5,y+2,1,1,0);
+   ctx.restore();
+  }
+ }
+ if(bridgeBuilt){
+  rect(71,132,18,7,0);rect(75,134,10,5,1);rect(79,131,2,8,2);
+ }
+}
+function drawMillEntry(){
+ rect(0,0,160,144,0);
+ rect(6,7,148,131,1);
+ rect(7,43,146,94,2);
+ for(let y=43;y<137;y+=7){
+  rect(7,y,146,1,1);
+  for(let x=10+(y%3)*6;x<151;x+=17) rect(x,y,1,7,1);
+ }
+ for(let y=10;y<43;y+=8){
+  rect(8,y,144,1,0);
+  for(let x=12+(y%16);x<150;x+=18) rect(x,y,1,8,0);
+ }
+ rect(66,12,28,33,0);
+ rect(69,15,22,29,1);
+ rect(71,27,18,18,0);
+ rect(68,44,24,5,1);
+ rect(66,49,28,3,0);
+ const grateBottom=millGateOpen?25:45;
+ for(let x=71;x<90;x+=4) rect(x,16,2,grateBottom-16,2);
+ rect(69,grateBottom-3,22,2,3);
+ rect(5,92,10,20,0);
+ rect(7,96,9,13,1);
+ rect(13,96,2,13,3);
+ for(const {x,y,width,bottom} of millEntryObjects){
+  rect(x,y,width,bottom-y,0);
+  rect(x+2,y+2,width-4,bottom-y-6,1);
+  rect(x+3,y+3,width-6,2,3);
+  for(let beam=x+7;beam<x+width-3;beam+=8) rect(beam,y+5,2,bottom-y-8,2);
+ }
+ rect(116,72,11,10,0);
+ rect(118,74,7,7,1);
+ rect(millGateOpen?122:119,69,2,9,2);
+ rect(millGateOpen?121:118,68,4,3,3);
+ for(const x of [46,112]){
+  rect(x,29,5,6,0);
+  rect(x+1,27+fireFrame,3,4,3);
+ }
+ drawMillSpiders(spiders);
+ drawMillDrop(millDrop.potion);
+}
+const spiderSquashMs=300, spiderFlashMs=85, spiderFlashCount=3;
+const spiderDeathMs=spiderSquashMs+spiderFlashMs*2*spiderFlashCount;
+let spiderDeathFrame=null;
+function animateSpiderDeaths(now){
+ spiderDeathFrame=null;
+ if(screen!=='play' || changingRoom) return;
+ draw(eyesClosed);
+ if(currentMillSpiders().some(spider=>spider.defeatedAt!==undefined && now-spider.defeatedAt<spiderDeathMs)){
+  spiderDeathFrame=requestAnimationFrame(animateSpiderDeaths);
+ }
+}
+function drawMillSpiders(enemies){
+ const now=performance.now();
+ for(const spider of enemies){
+  const {x,y,step}=spider;
+  if(spider.hp===0){
+   const elapsed=now-spider.defeatedAt;
+   if(!Number.isFinite(elapsed) || elapsed>=spiderDeathMs) continue;
+   const flash=elapsed>=spiderSquashMs;
+   if(flash && Math.floor((elapsed-spiderSquashMs)/spiderFlashMs)%2===1) continue;
+   const spread=2+Math.floor(Math.min(1,elapsed/spiderSquashMs)*3);
+   rect(x-spread,y+5,8+spread*2,1,flash?3:0);
+   rect(x,y+4,8,2,flash?3:1);
+   rect(x-2,y+6,3,1,flash?3:0);
+   rect(x+7,y+6,3,1,flash?3:0);
+   continue;
+  }
+  for(let i=0;i<3;i++){
+   const offset=(i+step)%2;
+   rect(x-2+offset,y+i*2,4,1,0);
+   rect(x+6-offset,y+i*2,4,1,0);
+  }
+  rect(x+2,y-1,4,5,0);
+  rect(x+1,y+2,6,4,0);
+  rect(x+3,y,2,1,2);
+  rect(x+2,y+5,1,1,3);
+  rect(x+5,y+5,1,1,3);
+ }
+}
+function drawGroundGem({x,y,available}){
+ if(!available) return;
+ rect(x-2,y-5,5,7,0);rect(x-3,y-3,7,3,0);
+ rect(x-1,y-4,3,5,2);rect(x-2,y-2,5,2,2);
+ rect(x-1,y-3,2,2,3);
+}
+function drawMillDrop(drop){
+ if(!drop) return;
+ const {x,y,item}=drop;
+ if(item===potion){
+  rect(x-2,y-8,5,2,0);rect(x-1,y-6,3,2,0);
+  rect(x-3,y-4,7,5,0);rect(x-2,y-3,5,3,3);rect(x+1,y-2,2,2,2);
+ }else{
+  rect(x-4,y-7,8,8,0);rect(x-3,y-6,6,6,3);
+  rect(x+2,y-6,1,1,2);rect(x-2,y-4,3,1,1);rect(x-2,y-2,4,1,1);
+ }
+}
+function drawGrainRoom(){
+ rect(0,0,160,144,0);rect(6,7,148,131,1);rect(7,42,146,95,2);
+ for(let y=10;y<41;y+=7){
+  rect(7,y,146,1,0);
+  for(let x=14+y%8;x<151;x+=18) rect(x,y,1,6,0);
+ }
+ for(let y=43;y<137;y+=8){
+  rect(7,y,146,1,1);
+  for(let x=11+y%11;x<151;x+=22) rect(x,y,1,8,1);
+ }
+ rect(67,133,26,11,0);rect(71,133,18,11,1);rect(73,136,14,2,2);
+ rect(111,22,26,21,0);rect(114,25,20,18,1);rect(115,37,18,6,0);rect(112,44,24,4,1);
+ // Hopper feeding the millstones.
+ rect(61,51,36,23,0);rect(64,53,30,10,1);rect(69,51,20,10,2);
+ rect(72,52,14,3,3);rect(75,55,8,9,1);rect(67,63,24,8,2);
+ rect(70,63,18,2,3);rect(77,66,4,3,0);
+ // Grain sacks beside the millstones.
+ for(const [x,y] of [[19,62],[28,58],[34,64]]){
+  rect(x,y-4,7,3,0);rect(x-1,y-1,9,8,0);rect(x,y,7,6,3);rect(x+4,y+3,3,3,2);
+ }
+ drawMillCrates(grainCrates);
+ drawMillDrop(millDrop.note);
+}
+function drawMillCrates(boxes){
+ for(const box of boxes){
+  const {x,y,width,bottom}=box;
+  if(box.hp===0){
+   if(performance.now()-box.brokenAt<700){
+    rect(x-2,y+7,5,2,0);rect(x+5,bottom,6,2,1);rect(x+width,y+5,4,2,0);
+   }
+   continue;
+  }
+  rect(x,y,width,12,0);rect(x+1,y+1,width-2,3,3);rect(x+2,y+5,width-4,6,1);
+  for(let i=2;i<10;i+=2) rect(x+i,y+5+Math.floor(i/2),3,1,2);
+ }
+}
+function drawPressRoom(){
+ rect(0,0,160,144,0);rect(6,7,148,131,1);rect(7,42,146,95,2);
+ for(let y=43;y<137;y+=8){
+  rect(7,y,146,1,1);
+  for(let x=10+y%9;x<151;x+=19) rect(x,y,1,8,1);
+ }
+ rect(68,133,24,11,0);rect(72,134,16,10,1);
+ drawMillArch(80);
+ drawMillLantern(51,31);drawMillLantern(109,31);
+ rect(145,108,15,17,0);rect(148,110,12,13,1);rect(151,111,9,11,2);
+ rect(63,83,34,18,0);rect(64,84,32,16,1);
+ rect(66,86,28,12,2);rect(68,88,24,8,1);
+ drawMillSpiders(pressSpiders.filter(spider=>spider.bottom<=100));
+ if(playerY>100) drawPressForeground();
+}
+function drawPressForeground(){
+ drawSideConveyors();
+ drawPressMechanism();
+ drawMillSpiders(pressSpiders.filter(spider=>spider.bottom>100));
+}
+function drawSideConveyors(){
+ const step=Math.floor(performance.now()/65);
+ for(const [index,{x,width}] of pressWalls.entries()){
+  const offset=(index===0?step%7:(7-step%7)%7);
+  rect(x,75,width,25,0);
+  rect(x+2,77,width-4,16,1);
+  for(let column=x+4+offset;column<x+width-3;column+=7){
+   rect(column,78,1,14,2);
+   rect(column,79,1,3,3);
+  }
+  rect(x+1,93,width-2,5,1);
+  rect(x+3,94,width-6,1,2);
+  for(const roller of [x+3,x+width-7]){
+   rect(roller,95,4,3,0);
+   rect(roller+1,96,2,1,3);
+  }
+ }
+}
+function drawPressMechanism(){
+ const warning=pressTick>=6 && pressTick<9;
+ const head=pressIsDown()?91:warning?71:65;
+ rect(75,56,10,head-54,0);rect(78,57,4,head-56,2);
+ rect(63,head,34,8,0);rect(65,head+1,30,3,warning?3:2);
+ for(let x=66;x<94;x+=6) rect(x,head+6,3,3,2);
+}
+function drawMillArch(x){
+ rect(x-12,19,24,25,0);rect(x-10,20,20,2,1);
+ rect(x-8,24,16,20,1);rect(x-6,29,12,15,0);
+ rect(x-10,44,20,4,2);
+}
+function drawMillLantern(x,y){
+ rect(x-1,y-3,3,4,0);rect(x-4,y,9,10,0);
+ rect(x-3,y+1,7,7,1);rect(x-2,y+2,5,5,fireFrame?2:3);
+ rect(x,y+2,1,5,0);rect(x-4,y+8,9,2,0);
+}
+function drawVaultRoom(){
+ rect(0,0,160,144,0);rect(6,7,148,131,1);rect(7,42,146,95,2);
+ for(let y=43;y<137;y+=8){
+  rect(7,y,146,1,1);
+  for(let x=10+y%13;x<151;x+=20) rect(x,y,1,8,1);
+ }
+ rect(68,133,24,11,0);rect(72,134,16,10,1);
+ rect(53,19,54,42,0);rect(56,21,48,40,1);rect(61,38,38,23,2);
+ drawMillLantern(44,33);drawMillLantern(110,33);
+ for(const wall of vaultWalls){
+  rect(wall.x,66,wall.width,13,0);rect(wall.x+1,67,wall.width-2,10,1);
+  for(let x=wall.x+5;x<wall.x+wall.width-3;x+=9) rect(x,68,2,8,2);
+ }
+ rect(65,62,30,4,0);
+ if(!vaultUnlocked){
+  for(let x=66;x<95;x+=4) rect(x,65,2,13,0);
+  rect(65,71,30,2,1);
+ }
+ for(const [index,{x}] of vaultLevers.entries()){
+  rect(x-8,95,17,11,0);rect(x-6,97,13,7,1);
+  for(let i=0;i<=index;i++) rect(x-index+i*2,107,1,3,0);
+ }
+ rect(16,117,14,8,0);rect(17,118,12,5,3);
+ for(const x of [18,21,23,25,28]) rect(x,119,1,3,1);
+ rect(72,54,16,9,0);rect(73,56,14,6,1);
+ if(vaultChest.open){
+  rect(72,49,16,7,0);rect(74,50,12,4,2);rect(74,55,12,2,0);
+ }else{
+  rect(72,52,16,5,0);rect(73,53,14,3,2);rect(79,55,3,4,3);
+ }
+ drawMillDrop(millDrop.vaultPotion);
+ drawGroundGem(vaultGem);
+}
+function drawVaultLeverHandle({x,mark}){
+ const pulled=vaultSequence.slice(0,vaultProgress).includes(mark);
+ rect(x+(pulled?2:-3),91,2,11,2);rect(x+(pulled?1:-4),90,4,3,3);
+}
+function drawVaultActors(blink){
+ const layers=[
+  {depth:playerY,paint:()=>drawTraveler(blink)},
+  ...vaultSpiders.map(spider=>({depth:spider.bottom,paint:()=>drawMillSpiders([spider])})),
+  ...vaultLevers.map(lever=>({depth:105,paint:()=>drawVaultLeverHandle(lever)}))
+ ];
+ layers.sort((a,b)=>a.depth-b.depth);
+ for(const {paint} of layers) paint();
+}
+function drawMillStorage(){
+ rect(0,0,160,144,0);rect(6,7,148,131,1);rect(7,42,146,95,2);
+ for(let y=11;y<41;y+=7){
+  rect(7,y,146,1,0);
+  for(let x=11+y%7;x<151;x+=18) rect(x,y,1,6,0);
+ }
+ for(let y=43;y<137;y+=8){
+  rect(7,y,146,1,1);
+  for(let x=12+y%13;x<151;x+=20) rect(x,y,1,8,1);
+ }
+ rect(0,108,15,17,0);rect(0,110,12,13,1);rect(0,111,8,11,2);
+ drawMillLantern(74,30);
+ rect(25,85,32,7,1);rect(28,86,26,2,2);
+ for(const x of [30,42,48]) rect(x,88,3,2,3);
+ rect(23,72,39,7,0);rect(25,73,35,3,1);
+ for(const [x,y] of [[26,64],[36,60],[46,65]]){
+  rect(x+2,y-3,5,3,0);rect(x,y,9,10,0);
+  rect(x+1,y+1,7,8,3);rect(x+5,y+4,3,5,2);
+ }
+ rect(98,46,42,25,0);rect(101,49,36,17,1);
+ rect(99,58,40,2,2);rect(100,67,38,2,2);
+ for(const x of [105,119,130]){
+  rect(x,50,4,7,2);rect(x+1,50,2,2,3);
+  rect(x-2,61,6,5,0);rect(x-1,62,4,3,2);
+ }
+ if(storageStairsOpen) drawStorageStairs();
+ drawMillCrates(storageCrates);
+ for(const drop of storageDrops){
+  if(drop.reward==='star'){
+   if(!drop.available) continue;
+   ctx.save();
+   traceLifeStar(drop.x,drop.y-4,5);
+   ctx.fillStyle=colors[3];ctx.strokeStyle=colors[0];
+   ctx.fill();ctx.stroke();
+   ctx.restore();
+  }else drawGroundGem(drop);
+ }
+}
+function drawStorageStairs(){
+ rect(67,85,26,20,0);rect(69,87,22,18,1);
+ rect(71,88,18,16,0);
+ for(let i=0;i<4;i++){
+  rect(75-i,91+i*3,10+i*2,1,2);
+  rect(75-i,92+i*3,10+i*2,1,1);
+ }
+ rect(67,85,26,1,2);rect(72,storageStairLip,16,1,3);
+}
+function drawMill(){
+ rect(0,0,160,144,0);rect(5,7,150,132,1);
+ for(let y=53;y<137;y+=8){
+  rect(7,y,146,1,0);
+  for(let x=10+(y%3)*6;x<151;x+=16) rect(x,y,1,7,0);
+ }
+ rect(7,12,146,39,2);
+ for(let y=14;y<51;y+=7) rect(7,y,146,1,1);
+ const {left,right,top,bottom}=sluiceChannel;
+ rect(left-3,43,right-left+6,8,0);
+ rect(left-1,46,right-left+2,5,1);
+ rect(left-2,top,right-left+4,bottom-top,0);
+ rect(left,top,right-left,bottom-top,1);
+ const flow=Math.floor(performance.now()/90)%8;
+ for(let y=top+flow;y<bottom-2;y+=8){
+  rect(left+1,y,4,1,2);
+  rect(right-6,y+2,5,1,2);
+ }
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(left,top,right-left,bottom-top);
+ ctx.clip();
+ drawSluiceRaft();
+ ctx.restore();
+ rect(left-3,bottom,right-left+6,6,0);
+ rect(left+1,bottom,right-left-2,2,1);
+ rect(5,94,9,17,0);rect(6,96,3,13,3);
+ if(playerY>sluiceChest.bottom) drawSluiceChest();
+ rect(116,107,27,20,0);
+ if(scentUnlocked){
+  rect(119,109,21,17,1);rect(121,110,17,16,0);
+  for(let i=0;i<4;i++) rect(124-i,114+i*3,11+i*2,1,2);
+  rect(121,shortcutStairLip,17,1,3);
+ }else{
+  rect(119,109,21,16,1);
+  for(let x=121;x<139;x+=4) rect(x,111,1,13,2);
+  rect(131,117,3,2,3);
+ }
+}
+function drawSluiceRaft(){
+ const {left,right}=sluiceChannel;
+ const y=Math.floor(raftY),width=right-left;
+ rect(left,y,width,raftLength,0);
+ rect(left,y+2,width,raftLength-4,2);
+ for(let x=left+3;x<right-1;x+=3) rect(x,y+2,1,raftLength-4,1);
+ rect(left,y+3,width,2,3);rect(left,y+raftLength-5,width,2,1);
+}
+function drawSluiceChest(){
+ const {x,y,width,bottom}=sluiceChest;
+ rect(x,y,width,bottom-y+1,0);
+ if(boss.phase==='defeated'){
+  const glowing=!scentUnlocked;
+  const shimmer=Math.floor(performance.now()/155)%3;
+  rect(x,y-5,width,10,0);rect(x+2,y-4,width-4,6,2);
+  rect(x+2,y+6,width-4,2,glowing?3:1);rect(x+2,y+10,width-4,5,1);
+  if(glowing){
+   const center=x+width/2;
+   rect(center-8,y+1,16,5,shimmer===1?3:2);
+   rect(center-1,y-10-shimmer,2,4,3);
+   rect(center-10+shimmer,y-4,2,2,3);
+   rect(center+9-shimmer,y-7,2,2,3);
+  }
+  return;
+ }
+ rect(x+2,y+4,width-4,5,2);rect(x+3,y+3,width-6,2,3);
+ rect(x+2,y+11,width-4,4,1);
+ for(const band of [x+4,x+width-6]) rect(band,y+4,2,11,3);
+ rect(x+width/2-2,y+8,4,5,0);rect(x+width/2-1,y+9,2,3,3);
+}
+function drawChestBlast(){
+ if(boss.phase!=='intro' || boss.elapsed>=475) return;
+ const spread=Math.floor(6+boss.elapsed/18);
+ const x=128,y=76;
+ for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1],[0,-1],[0,1],[1,-1],[1,1]]){
+  rect(x+dx*spread,y+dy*Math.floor(spread*.65),3,2,boss.elapsed<200?3:2);
+ }
+}
+function drawSluiceBoss(){
+ if(boss.phase==='dormant' || boss.phase==='defeated') return;
+ if(boss.phase==='intro' && boss.elapsed<475) return;
+ let lift=0,ghost=false,alpha=1;
+ if(boss.phase==='intro' && boss.elapsed<bossMaterializeAt){
+  const progress=(boss.elapsed-475)/(bossMaterializeAt-475);
+  lift=(1-progress)*20;
+  ghost=progress<.77;
+  alpha=.3+progress*.7;
+ }else if(boss.phase==='sinking'){
+  const progress=Math.min(1,boss.elapsed/1150);
+  lift=progress*34;
+  ghost=true;
+  alpha=1-progress*.85;
+ }
+ const x=Math.round(boss.x),y=Math.round(boss.bottom);
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(0,0,160,y+2);
+ ctx.clip();
+ ctx.translate(0,Math.floor(lift));
+ ctx.globalAlpha=alpha;
+ const shadow=ghost?1:0, fur=ghost?3:1, trim=ghost?3:2;
+ rect(x+2,y-22,18,15,shadow);rect(x+5,y-25,12,15,fur);
+ rect(x+3,y-10,6,10,shadow);rect(x+13,y-10,6,10,shadow);
+ rect(x+5,y-8,4,6,trim);rect(x+13,y-8,4,6,trim);
+ rect(x+3,y-3,6,2,fur);rect(x+13,y-3,6,2,fur);
+ rect(x,y-21,6,13,shadow);rect(x+16,y-21,6,13,shadow);
+ rect(x+1,y-19,4,8,trim);rect(x+17,y-19,4,8,trim);
+ for(const claw of [x,x+3,x+18,x+21]) rect(claw,y-11,1,4,3);
+ rect(x+4,y-34,4,9,shadow);rect(x+14,y-34,4,9,shadow);
+ rect(x+5,y-32,2,4,trim);rect(x+15,y-32,2,4,trim);
+ rect(x+4,y-29,14,9,shadow);rect(x+5,y-28,12,6,fur);
+ rect(x+6,y-25,3,1,3);rect(x+13,y-25,3,1,3);
+ rect(x+6,y-22,10,4,trim);rect(x+10,y-22,2,1,shadow);
+ rect(x+8,y-19,6,2,shadow);rect(x+8,y-18,1,2,3);rect(x+13,y-18,1,2,3);
+ rect(x+8,y-16,6,3,trim);rect(x+10,y-13,2,3,trim);
+ ctx.restore();
+ if(boss.phase==='battle'){
+  rect(x-4,y-41,30,4,0);rect(x-3,y-40,28,2,1);
+  rect(x-3,y-40,Math.ceil(28*boss.hp/bossMaxHp),2,3);
+ }
+ if(boss.tell){
+  const {dx,dy}=boss.tell;
+  const distance=boss.tell.until-boss.elapsed;
+  if(Math.floor(distance/90)%2===0){
+   for(let i=6;i<=27;i+=7) rect(Math.round(x+11+dx*i),Math.round(y-6+dy*i),2,2,3);
+  }
+ }
+ if(boss.wave){
+  const {x:wx,y:wy,dx,dy}=boss.wave;
+  for(let side=-9;side<=9;side+=2){
+   const arc=3-Math.abs(side)/3;
+   rect(Math.round(wx+dx*arc-dy*side),Math.round(wy-5+dy*arc+dx*side),2,2,3);
+  }
+ }
+}
+function drawMillApproach(){
+ rect(0,0,160,144,0);
+ rect(5,6,150,133,1);
+ // Three paths meet below the mill.
+ rect(67,0,26,104,2);rect(5,91,155,17,2);
+ rect(105,77,22,24,2);rect(118,103,17,32,2);
+ for(let i=0;i<74;i++){
+  const x=6+i*43%148,y=8+i*31%129;
+  rect(x,y,2,1,(x>=67 && x<=93 || y>=91 && y<=108)?1:2);
+ }
+ // Mill Shop storefront, with the main mill road branching east.
+ rect(140,31,15,56,0);
+ for(let y=34;y<87;y+=6) rect(144,y,8,1,2);
+ rect(99,49,41,26,0);rect(101,51,37,22,2);
+ for(let y=54;y<71;y+=4) rect(101,y,37,1,1);
+ for(let row=0;row<10;row++) rect(116-row*2,38+row,6+row*4,1,row%3===0?2:0);
+ rect(105,54,8,8,0);rect(107,56,4,4,3);
+ rect(115,60,9,15,0);rect(117,62,5,11,1);
+ rect(125,54,12,8,0);rect(127,55,8,5,3);
+ rect(101,76,37,3,0);rect(115,76,9,3,2);
+ rect(144,97,11,3,3);rect(151,95,3,7,3);
+ // The service gate will become the return shortcut.
+ rect(116,111,27,11,0);
+ for(let x=118;x<141;x+=4) rect(x,113,2,7,2);
+ rect(117,117,25,2,1);rect(128,116,3,3,3);
+ drawVillageGate();
+ rect(23,87,2,8,0);rect(16,85,15,4,0);rect(18,86,11,2,3);
+ for(const [x,y] of [[27,123],[57,119],[145,113],[56,37]]){
+  rect(x+3,y,5,2,0);rect(x,y+2,11,7,0);rect(x+2,y+3,7,3,2);rect(x+5,y+8,2,4,0);
+ }
+ drawGrassField();
+ const rain=Math.floor(performance.now()/80);
+ for(let i=0;i<32;i++) rect((i*37+157-rain%160)%153+5,(i*29+rain*5)%134+5,1,2,2);
+}
+function drawVillageGate(){
+ const {x,y,width,bottom}=villageGate;
+ rect(x-2,y-3,width+5,4,0);rect(x-2,bottom-1,width+5,4,0);
+ rect(x,y,width,bottom-y,0);rect(x+1,y+1,width-2,bottom-y-2,1);
+ for(let row=y+2;row<bottom-2;row+=4) rect(x+2,row,width-4,2,2);
+ rect(x+width-1,y+2,1,bottom-y-4,2);
+ rect(x+width-4,y+7,2,3,3);
+}
+function drawGrassField(){
+ const now=performance.now();
+ for(const tile of grassTiles){
+  const {x,y}=tile;
+  if(tile.hp>0){
+   rect(x,y+5,8,2,0);rect(x+1,y+2,2,5,2);rect(x+3,y,2,7,2);
+   rect(x+6,y+3,1,4,2);rect(x+4,y+1,1,2,3);
+  }else{
+   rect(x+1,y+5,6,2,0);rect(x+2,y+4,1,2,2);rect(x+5,y+4,1,2,2);
+   if(now-tile.cutAt<200){
+    const spread=Math.floor((now-tile.cutAt)/65);
+    rect(x+1-spread,y+2-spread,2,1,2);
+    rect(x+5+spread,y+1-spread,2,1,3);
+   }
+   if(tile.gemAvailable){
+    rect(x+2,y+2,5,3,0);rect(x+3,y+1,3,5,3);rect(x+4,y+4,1,1,2);
+   }
+  }
+ }
+}
+function drawHangingWolf(){
+ rect(64,14,32,40,0);rect(66,16,28,36,1);
+ // A wall hook and two rope strands end at the raised ankles.
+ rect(78,15,4,3,3);
+ for(let y=18;y<25;y++){
+  const spread=Math.floor((y-17)/2);
+  rect(79-spread,y,1,1,3);rect(80+spread,y,1,1,3);
+ }
+ rect(75,23,4,4,0);rect(81,23,4,4,0);
+ rect(76,24,2,2,3);rect(82,24,2,2,3);
+ rect(75,26,4,8,2);rect(81,26,4,8,2);
+ rect(73,31,14,12,0);rect(75,32,10,9,2);
+ rect(71,36,4,12,0);rect(86,36,4,11,0);
+ rect(72,39,2,8,2);rect(87,39,2,7,2);
+ // Inverted muzzle and ears hang below the shoulders.
+ rect(74,41,13,8,0);rect(76,42,9,6,2);
+ rect(78,40,5,4,0);rect(79,41,3,2,3);
+ rect(77,45,2,1,0);rect(82,45,2,1,0);
+ rect(74,47,3,4,0);rect(84,47,3,4,0);
+}
+function drawMillShop(blink){
+ rect(0,0,160,144,0);rect(5,7,150,130,2);rect(5,7,150,49,1);
+ for(let y=60;y<137;y+=8){
+  rect(5,y,150,1,1);
+  for(let x=10+(y%3)*7;x<151;x+=24) rect(x,y,1,8,1);
+ }
+ rect(17,22,125,29,0);rect(19,24,121,24,1);
+ for(const y of [32,44]){
+  rect(19,y+4,121,2,2);
+  for(const x of [23,39,56,74,93,109,129]){
+   rect(x,y-4,4,7,0);rect(x+1,y-5,2,7,(x+y)%3===0?3:2);
+  }
+ }
+ drawHangingWolf();
+ rect(15,69,30,15,0);rect(17,70,26,8,1);
+ for(const x of [20,28,36]){
+  rect(x,67,4,8,0);rect(x+1,67,2,6,3);
+ }
+ rect(87,57,10,10,0);rect(89,59,6,7,3);
+ rect(88,57,8,3,1);rect(90,62,1,blink?1:2,0);rect(94,62,1,blink?1:2,0);
+ rect(85,67,14,12,0);rect(88,68,8,9,2);
+ rect(65,77,62,12,0);rect(67,78,58,5,3);rect(67,84,58,3,1);
+ rect(112,88,15,15,0);rect(113,88,12,8,2);rect(114,96,11,4,1);
+ rect(73,74,7,4,0);rect(74,74,5,3,2);
+ rect(105,73,4,5,1);rect(106,72,2,2,3);
+ rect(69,129,22,8,0);rect(71,130,18,6,1);rect(76,132,8,2,3);
+}
+function drawBloodPool(){
+ ctx.fillStyle='#542c28';
+ ctx.fillRect(78,68,10,4);
+ ctx.fillRect(75,70,16,3);
+ ctx.fillRect(79,73,9,2);
+ ctx.fillRect(73,72,1,1);
+ ctx.fillRect(89,75,2,1);
+ ctx.fillStyle='#773a32';
+ ctx.fillRect(79,69,6,1);
+ ctx.fillRect(77,71,4,1);
+}
+function drawDagger(x,y,onFloor){
+ if(onFloor){
+  rect(x-3,y,7,2,0);rect(x,y,4,1,3);rect(x-2,y-1,1,4,1);
+ }else{
+  rect(x,y-7,2,7,0);rect(x,y-7,1,5,3);rect(x-1,y-2,4,1,2);
+ }
+}
+function drawStrawArmor(target,x,y){
+ const pixels=[
+  '01...10','1233321','1232321','.13231.','.12321.','.13331.','..111..'
+ ];
+ const palette=['#4c3821','#694419','#d3a54e','#f0ce79'];
+ const previous=target.fillStyle;
+ pixels.forEach((row,dy)=>Array.from(row).forEach((pixel,dx)=>{
+  if(pixel==='.') return;
+  target.fillStyle=palette[Number(pixel)];
+  target.fillRect(x+dx,y+dy,1,1);
+ }));
+ target.fillStyle=previous;
+}
+function armorIcon(){
+ const icon=document.createElement('canvas');
+ icon.width=7;icon.height=7;
+ icon.className='armor-icon';
+ icon.setAttribute('aria-hidden','true');
+ drawStrawArmor(icon.getContext('2d'),0,0);
+ return icon;
+}
+const helmetSprites={
+ ArrowDown:[
+  '...00000000...',
+  '..0122122100..',
+  '.012122122210.',
+  '01221221212210',
+  '01212212212210',
+  '01221221221210',
+  '00111111111100',
+  '0210...0..0120',
+  '0120...0..0210',
+  '0210...0..0120',
+  '0120......0210',
+  '.010......010.',
+  '..00......00..',
+ ],
+ ArrowUp:[
+  '...00000000...',
+  '..0121221210..',
+  '.0122122121210',
+  '01212212212210',
+  '01221221221210',
+  '01212212212210',
+  '01221221221210',
+  '01212212212210',
+  '01221221221210',
+  '01212212212210',
+  '01211111111210',
+  '.001212121100.',
+  '..0000000000..',
+ ],
+ ArrowLeft:[
+  '....000000....',
+  '..0012221210..',
+  '.012122212210.',
+  '0122221221210.',
+  '01212212212210',
+  '00111221221210',
+  '...00001212210',
+  '.......0121210',
+  '.......0012210',
+  '.......0021210',
+  '.......001210.',
+  '.......01210..',
+  '.......0000...',
+ ],
+ ArrowRight:[
+  '....000000....',
+  '..0121222100..',
+  '.012212221210.',
+  '.0121221222210',
+  '01221221221210',
+  '01212212211100',
+  '01221210000...',
+  '0121210.......',
+  '0122100.......',
+  '0121200.......',
+  '.012100.......',
+  '..01210.......',
+  '...0000.......',
+ ],
+};
+function drawStrawHelmet(target,x,y,direction='ArrowDown'){
+ const palette=['#493a22','#806239','#bc9959'];
+ const previous=target.fillStyle;
+ helmetSprites[direction].forEach((row,dy)=>Array.from(row).forEach((pixel,dx)=>{
+  if(pixel==='.') return;
+  target.fillStyle=palette[Number(pixel)];
+  target.fillRect(x+dx,y+dy,1,1);
+ }));
+ target.fillStyle=previous;
+}
+function helmetIcon(){
+ const icon=document.createElement('canvas');
+ icon.width=14;icon.height=13;
+ icon.className='armor-icon';
+ icon.setAttribute('aria-hidden','true');
+ drawStrawHelmet(icon.getContext('2d'),0,0);
+ return icon;
+}
+function drawFront(blink){
+ rect(74,83,12,19,0);rect(72,87,16,13,0);
+ rect(76,82,8,2,0);rect(75,85,10,4,1);rect(77,89,8,6,3);
+ rect(73,90,4,4,1);rect(85,90,2,4,1);
+ rect(78,90,blink?2:1,blink?1:2,0);rect(82,90,blink?2:1,blink?1:2,0);
+ rect(75,96,10,5,2);rect(76,96,8,2,1);
+ rect(74,98,2,3,3);
+ if(raisedItem){
+  rect(85,90,4,10,0);rect(86,91,2,8,2);rect(87,85,3,6,0);rect(88,85,1,4,3);
+ }else if(punching){
+  rect(85,96,3,5,2);
+  rect(83,96,4,4,0);
+  rect(83,97,3,3,2);
+  drawFist(83,98);
+ }else{
+  rect(84,98,2,3,3);
+ }
+}
+function drawBack(){
+ rect(74,83,12,19,0);rect(72,87,16,13,0);
+ rect(76,82,8,2,0);rect(75,85,10,8,1);
+ rect(77,86,6,1,2);rect(76,93,8,2,1);
+ rect(75,96,10,5,2);rect(77,96,6,4,1);
+ rect(74,98,2,3,3);rect(84,98,2,3,3);
+}
+function drawFeet(){
+ const leftFoot=102+stride*2;
+ const rightFoot=102-stride*2;
+ rect(75,101,5,leftFoot-97,0);
+ rect(80,101,5,rightFoot-97,0);
+ rect(76,leftFoot,3,3,1);
+ rect(81,rightFoot,3,3,1);
+}
+function drawProfile(blink){
+ rect(75-stride*2,101,5,4,1);
+ rect(75,84,10,17,0);rect(77,82,6,3,0);
+ rect(76,85,7,8,1);rect(81,88,4,1,3);rect(81,89,5,5,3);rect(81,94,4,1,3);
+ rect(83,89,blink?2:1,blink?1:2,0);
+ rect(76,95,9,6,2);rect(78,96,3,4,1);rect(80+stride,98,2,3,3);
+ rect(80+stride*2,101,4,5,0);rect(81+stride*2,104,4,2,1);
+
+}
+let screen='title', blinkTimer;
+music.volume=yard && !inShop && !inMill?.35:1;
+draw(false);
+function resumeFire(){
+ fireTimer=setInterval(()=>{
+  fireFrame=1-fireFrame;
+  if(!raisedItem){
+   updateWolf();
+   updateMillSpiders();
+   updateMillPress();
+  }
+  draw(eyesClosed);
+ },230);
+}
+function blink(){
+ eyesClosed=true;
+ draw(eyesClosed);
+ blinkTimer=setTimeout(()=>{
+  eyesClosed=false;
+  draw(eyesClosed);
+  blinkTimer=setTimeout(blink,2700+Math.random()*1700);
+ },140);
+}
+
+const directions=new Map([
+ ['ArrowUp',[0,-1]],['ArrowDown',[0,1]],
+ ['ArrowLeft',[-1,0]],['ArrowRight',[1,0]]
+]);
+const furniture=[13,119].flatMap(x=>[
+ {id:'table-'+x,x,y:73,width:26,bottom:92,height:18},
+ {id:'stool-'+x,x:x+7,y:98,width:12,bottom:110,height:8,platform:true,seatY:102}
+]);
+furniture.push(crate,chest);
+function objectAt(x,y,includeEdges=false,height=jump?.height??standingHeight,objects=roomObjects(),sweepX=0,sweepY=0){
+ return objects.find(object=>{
+  if(object.broken || object.hp===0 || height>=object.height) return false;
+  const paddingX=(object.hitPaddingX??0)+sweepX;
+  const paddingY=(object.hitPaddingY??0)+Number(includeEdges)+sweepY;
+  const left=object.x-paddingX;
+  const right=object.x+object.width+paddingX;
+  const overlaps=includeEdges
+   ? x+5>=left && x-5<=right
+   : x+5>left && x-5<right;
+  return overlaps && y>=object.y-paddingY && y<=object.bottom+paddingY;
+ });
+}
+function platformAt(x,y){
+ return roomObjects().find(object=>object.platform && !object.broken &&
+  x+5>object.x && x-5<object.x+object.width && y>=object.y && y<=object.bottom);
+}
+function drawFist(x,y,shade=3){
+ rect(x-1,y-2,3,5,0);
+ rect(x-2,y-1,5,3,0);
+ rect(x,y-1,1,3,shade);
+ rect(x-1,y,3,1,shade);
+}
+function drawRearPunch(){
+ rect(playerX+5,playerY-13,4,5,2);
+ drawFist(playerX+8,playerY-13,2);
+}
+function drawPunch(){
+ const [dx,dy]=directions.get(facing);
+ const x=playerX+dx*9, y=playerY-8+dy*8;
+ drawFist(x,y);
+}
+function bowOrigin(dx,dy){
+ return {x:playerX+(dx===0?4:0),y:playerY-9};
+}
+function flyingArrowOrigin(dx,dy){
+ const {x,y}=bowOrigin(dx,dy);
+ return {x,y:y-Math.round(jump?.height??standingHeight)};
+}
+function drawBow(){
+ const [dx,dy]=directions.get(facing);
+ const {x,y}=bowOrigin(dx,dy);
+ const drawn=jabFrame===1;
+ const pixel=(forward,side,shade)=>rect(x+dx*forward-dy*side,y+dy*forward+dx*side,1,1,shade);
+ // The curved stave stays in the leading hand while the other hand pulls the string.
+ for(let side=-4;side<=4;side++){
+  const forward=7-Math.max(0,Math.abs(side)-2);
+  pixel(forward,side,3);
+  pixel(forward-1,side,0);
+  const string=drawn?2+Math.floor(Math.abs(side)*3/4):5;
+  pixel(string,side,2);
+ }
+ if(drawn){
+  for(let forward=1;forward<9;forward++) pixel(forward,0,3);
+ }
+ pixel(drawn?1:4,0,3);
+ pixel(6,1,3);
+}
+function drawFlyingArrow(){
+ const {x,y,dx,dy,distance:tip}=arrowShot;
+ const pixel=(forward,side,shade)=>rect(x+dx*forward-dy*side,y+dy*forward+dx*side,1,1,shade);
+ const tail=Math.max(0,tip-9);
+ for(let distance=tail;distance<tip;distance++) pixel(distance,0,2);
+ pixel(tail,-1,1);pixel(tail,1,1);
+ if(tip>=2){
+  pixel(tip-1,-1,3);pixel(tip-1,1,3);
+  pixel(tip-2,-2,2);pixel(tip-2,2,2);
+ }
+ pixel(tip,0,3);
+}
+function drawDebris(){
+ const flashElapsed=debrisElapsed-scatterTime-restTime;
+ if(flashElapsed>=0 && Math.floor(flashElapsed/80)%2===1) return;
+ const progress=Math.min(1,debrisElapsed/scatterTime);
+ for(const [dx,dy,width,height] of fragments){
+  const x=Math.round(crate.x+5+dx*progress);
+  const y=Math.round(crate.bottom+dy*progress-6*(1-progress)-32*progress*(1-progress));
+  rect(x,y,width,height,flashElapsed>=0?3:0);
+  if(width>2 && flashElapsed<0) rect(x,y,width-1,1,2);
+ }
+}
+function resumeDebris(){
+ if(!crate.broken || debrisElapsed>=debrisDuration) return;
+ debrisPrevious=null;
+ debrisFrame=requestAnimationFrame(animateDebris);
+}
+function animateDebris(now){
+ if(debrisPrevious!==null) debrisElapsed+=now-debrisPrevious;
+ debrisPrevious=now;
+ draw(eyesClosed);
+ if(debrisElapsed<debrisDuration) debrisFrame=requestAnimationFrame(animateDebris);
+}
+function drawJab(){
+ const [dx,dy]=directions.get(facing);
+ const side=dx===0?5:0;
+ const extension=jabFrame===1?1:5;
+ const x=playerX+side+dx*(4+extension);
+ const y=playerY-9+dy*(2+extension);
+ ctx.save();
+ ctx.translate(x,y);
+ ctx.rotate(Math.atan2(dy,dx));
+ // Hand, grip, guard, then a tapered blade pointing along the jab.
+ rect(-3,-1,3,3,2);
+ rect(-1,0,3,1,0);
+ rect(2,-2,1,5,0);
+ rect(3,-1,4,3,1);
+ rect(3,0,6,1,3);
+ rect(4,-1,2,1,3);
+ ctx.restore();
+}
+let effectsAudio;
+let nextFootstep=0;
+const attackSounds={
+ splash:[.25,'bandpass',1850,450,.17],
+ step:[.10,'lowpass',370,140,.13,0],
+ gravel:[.12,'bandpass',1300,500,.135,0],
+ punch:[.09,'bandpass',480,190,.24,0],
+ hit:[.12,'lowpass',850,190,.28,105],
+ crack:[.16,'highpass',1900,650,.30,145],
+ swipe:[.13,'bandpass',3700,1050,.21,0]
+};
+function syncOutdoorAudio(){
+  if(yard && !inShop && !inMill && effectsAudio && !rainSource){
+   const buffer=effectsAudio.createBuffer(1,effectsAudio.sampleRate*2,effectsAudio.sampleRate);
+   const noise=buffer.getChannelData(0);
+   for(let i=0;i<noise.length;i++) noise[i]=Math.random()*2-1;
+   rainSource=effectsAudio.createBufferSource();
+   const gain=effectsAudio.createGain();
+   const filter=effectsAudio.createBiquadFilter();
+   filter.type='lowpass';
+   filter.frequency.value=1350;
+   gain.gain.value=.045;
+   rainSource.buffer=buffer;
+   rainSource.loop=true;
+   rainSource.connect(filter).connect(gain).connect(effectsAudio.destination);
+   rainSource.start();
+  }else if((!yard || inShop || inMill) && rainSource){
+   rainSource.stop();
+   rainSource=null;
+  }
+  music.volume=yard && !inShop && !inMill?.35:1;
+}
+function unlockEffects(){
+ const AudioContextClass=window.AudioContext || window.webkitAudioContext;
+ if(!AudioContextClass) return;
+ effectsAudio??=new AudioContextClass();
+ if(effectsAudio.state==='suspended') effectsAudio.resume().catch(()=>{});
+ syncOutdoorAudio();
+}
+function playAttackSound(name){
+ if(!effectsAudio) return;
+ const [duration,filterType,from,to,volume,bass]=attackSounds[name];
+ const time=effectsAudio.currentTime;
+ const buffer=effectsAudio.createBuffer(1,Math.ceil(duration*effectsAudio.sampleRate),effectsAudio.sampleRate);
+ const samples=buffer.getChannelData(0);
+ for(let i=0;i<samples.length;i++) samples[i]=Math.random()*2-1;
+ const noise=effectsAudio.createBufferSource();
+ const filter=effectsAudio.createBiquadFilter();
+ const envelope=effectsAudio.createGain();
+ noise.buffer=buffer;
+ filter.type=filterType;
+ filter.frequency.setValueAtTime(from,time);
+ filter.frequency.exponentialRampToValueAtTime(to,time+duration);
+ envelope.gain.setValueAtTime(.001,time);
+ envelope.gain.linearRampToValueAtTime(volume,time+.009);
+ envelope.gain.exponentialRampToValueAtTime(.001,time+duration);
+ noise.connect(filter).connect(envelope).connect(effectsAudio.destination);
+ noise.start(time);
+ if(bass){
+  const thump=effectsAudio.createOscillator();
+  const thumpGain=effectsAudio.createGain();
+  thump.frequency.setValueAtTime(bass,time);
+  thump.frequency.exponentialRampToValueAtTime(45,time+duration);
+  thumpGain.gain.setValueAtTime(.14,time);
+  thumpGain.gain.exponentialRampToValueAtTime(.001,time+duration);
+  thump.connect(thumpGain).connect(effectsAudio.destination);
+  thump.start(time);
+  thump.stop(time+duration);
+ }
+}
+function playWolfGrowl(){
+ const duration=.68;
+ const rate=effectsAudio.sampleRate;
+ const buffer=effectsAudio.createBuffer(1,Math.ceil(duration*rate),rate);
+ const samples=buffer.getChannelData(0);
+ let grain=0;
+ for(let i=0;i<samples.length;i++){
+  const t=i/rate;
+  const phase=2*Math.PI*(99*t-24*t*t);
+  grain=grain*.92+(Math.random()*2-1)*.08;
+  const envelope=Math.min(t/.09,1)*Math.pow(1-t/duration,1.4);
+  samples[i]=envelope*(Math.sin(phase)*.041+Math.sin(phase*2)*.021+grain*.34)*(0.74+0.26*Math.sin(2*Math.PI*23*t));
+ }
+ const source=effectsAudio.createBufferSource();
+ source.buffer=buffer;
+ source.connect(effectsAudio.destination);
+ wolfGrowl=source;
+ source.onended=()=>{if(wolfGrowl===source) wolfGrowl=null;};
+ source.start();
+}
+function stopWolfGrowl(){
+ if(!wolfGrowl) return;
+ wolfGrowl.stop();
+ wolfGrowl=null;
+}
+function playPickupSound(notes){
+ if(!effectsAudio) return;
+ for(const [index,pitch] of notes.entries()){
+  const time=effectsAudio.currentTime+index*.075;
+  const tone=effectsAudio.createOscillator();
+  const envelope=effectsAudio.createGain();
+  tone.type='triangle';
+  tone.frequency.value=pitch;
+  envelope.gain.setValueAtTime(.001,time);
+  envelope.gain.linearRampToValueAtTime(.075,time+.012);
+  envelope.gain.exponentialRampToValueAtTime(.001,time+.17);
+  tone.connect(envelope).connect(effectsAudio.destination);
+  tone.start(time);
+  tone.stop(time+.17);
+ }
+}
+function spiderAtArrowTip(x,y,dx,dy,spiders){
+ // The arrow flies in screen space, where the spider sprite sits above its feet.
+ const padX=2*Math.abs(dy),padY=2*Math.abs(dx);
+ return spiders.find(spider=>spider.hp>0 &&
+  x>=spider.x-2-padX && x<=spider.x+spider.width+1+padX &&
+  y>=spider.y-1-padY && y<=spider.bottom-1+padY);
+}
+function attackRoomTargets(){
+ if(sluiceRoom && boss.phase==='battle') return [boss,...roomObjects()];
+ return ditch?[cart,wolf]:yard?roomObjects():[...furniture,...damageableCharacters.values()];
+}
+function cutGrassAt(x,y,height){
+ const grass=millApproach && grassTiles.find(tile=>tile.hp>0 &&
+  height<tile.height && x>=tile.x && x<tile.x+tile.width && y>=tile.y && y<=tile.bottom);
+ if(!grass) return false;
+ grass.hp=0;
+ grass.cutAt=performance.now();
+ grass.gemAvailable=grass.hasGem;
+ queueStorySave();
+ playAttackSound('crack');
+ return true;
+}
+function hitAttackTarget(target){
+ if(!(target.hp>0)) return;
+ const base=stats.get('str')?.value??10;
+ const bonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.strBonus??0),0);
+ const damage=base+bonus;
+ target.hp=Math.max(0,target.hp-damage);
+ if(target.hp===0 && currentMillSpiders().includes(target)){
+  target.defeatedAt=performance.now();
+  if(sluiceRoom && boss.phase==='battle' && ++boss.spidersDefeated%2===0){
+   bossPotions.push({item:potion,x:target.x+4,y:target.bottom-2});
+  }
+  if(spiderDeathFrame===null) spiderDeathFrame=requestAnimationFrame(animateSpiderDeaths);
+ }
+ const crateBroke=target===crate && target.hp===0;
+ const grainBoxBroke=millGrain && target.hp===0 && grainCrates.includes(target);
+ const storageBoxBroke=millStorage && target.hp===0 && storageCrates.includes(target);
+ playAttackSound(crateBroke || grainBoxBroke || storageBoxBroke?'crack':'hit');
+ if(grainBoxBroke || storageBoxBroke) target.brokenAt=performance.now();
+ if(grainBoxBroke && target===grainCrates[1]) millDrop.note={item:emperorNote,x:target.x+7,y:target.bottom};
+ if(storageBoxBroke) breakStorageCrate(target);
+ if(millEntry && target.hp===0 && spiders.includes(target) && !potionDropped){
+  potionDropped=true;
+  millDrop.potion={item:potion,x:target.x+4,y:target.bottom-2};
+ }
+ if(crateBroke){
+  crate.broken=true;
+  crateGem.available=true;
+  resumeDebris();
+ }
+ if(millVault && target.hp===0 && vaultSpiders.includes(target)){
+  const x=target.x+4,y=target.bottom-2;
+  const defeated=vaultSpiders.filter(spider=>spider.hp===0).length;
+  if(defeated===2) millDrop.vaultPotion={item:potion,x,y};
+  if(defeated===vaultSpiders.length){
+   Object.assign(vaultGem,{x,y,available:true});
+  }
+ }
+ if(target===boss && !boss.hp) defeatSluiceBoss();
+ if(target===wolf && !wolf.hp){stopWolfGrowl();speakWolf();}
+ else if(target.hp===0 && target!==boss && !bossSpiders.includes(target)) queueStorySave();
+ document.dispatchEvent(new CustomEvent('game:target-damaged',{
+  detail:{id:target.id,damage,hp:target.hp}
+ }));
+}
+function damageInReach(reach){
+ const [dx,dy]=directions.get(facing);
+ const targets=attackRoomTargets();
+ // Give close-range attacks room across the swing while keeping them in front.
+ const spidersInFront=currentMillSpiders().filter(spider=>
+  dx*(spider.x+spider.width/2-playerX)+dy*((spider.y+spider.bottom)/2-playerY)>=0
+ );
+ const height=jump?.height??standingHeight;
+ for(let distance=1;distance<=reach;distance++){
+  const x=playerX+dx*distance,y=playerY+dy*distance;
+  const target=objectAt(x,y,false,height,targets)??
+   objectAt(x,y,false,height,spidersInFront,Math.abs(dy)*4,Math.abs(dx)*6);
+  if(target){hitAttackTarget(target);return;}
+  if(cutGrassAt(x,y,height)) return;
+ }
+}
+function releaseArrow(reach){
+ const [dx,dy]=directions.get(facing);
+ const {x,y}=flyingArrowOrigin(dx,dy);
+ arrowShot={x,y,dx,dy,groundX:playerX,groundY:playerY,height:jump?.height??standingHeight,
+  reach,distance:0,stopped:false,startedAt:performance.now()};
+ advanceFlyingArrow(arrowShot.startedAt);
+}
+function advanceFlyingArrow(now){
+ const shot=arrowShot;
+ if(shot.stopped) return;
+ const {x,y,dx,dy,height,groundX,groundY,reach,startedAt}=shot;
+ const origin=Math.min(reach,8);
+ const progress=Math.max(0,Math.min(1,(now-startedAt)/140));
+ const next=Math.round(origin+(reach-origin)*progress);
+ const targets=attackRoomTargets();
+ const spiders=currentMillSpiders();
+ while(shot.distance<next){
+  const distance=++shot.distance;
+  const floorX=groundX+dx*distance,floorY=groundY+dy*distance;
+  const target=objectAt(floorX,floorY,false,height,targets)??
+   spiderAtArrowTip(x+dx*distance,y+dy*distance,dx,dy,spiders);
+  if(target || cutGrassAt(floorX,floorY,height)){
+   shot.stopped=true;
+   if(target) hitAttackTarget(target);
+   return;
+  }
+ }
+ if(shot.distance>=reach) shot.stopped=true;
+}
+function endPunch(){
+ clearTimeout(punchTimer);
+ clearTimeout(jabTimer);
+ jabFrame=0;
+ arrowShot=null;
+ punching=false;
+}
+document.addEventListener('game:equipment-change',event=>{
+ equippedItem=event.detail?.item??null;
+});
+const punchButton=document.querySelector('#action-a');
+punchButton.addEventListener('pointerdown',event=>{
+ if(event.button!==0) return;
+ event.preventDefault();
+ startPunch();
+});
+punchButton.addEventListener('click',event=>{
+ if(event.detail===0) startPunch();
+});
+function startPunch(){
+ if(screen==='title'){beginGame();return;}
+ if(raisedItem){dismissAcquisition();return;}
+ if(drowningAt!==null) return;
+ if(sluiceRoom && (boss.phase==='intro-dialogue' || boss.phase==='last-words')){
+  advanceBossDialogue();
+  return;
+ }
+ if(bossControlsLocked()) return;
+ if(shopStep!==null){
+  if(shopStep==='hello') showShopDialogue('choice');
+  else if(shopStep==='choice') showShopDialogue(shopChoice===0?'buy':'sell');
+  else if(shopStep==='buy') buyShopItem();
+  else showShopDialogue('choice');
+  return;
+ }
+ if(discoveryOpen){
+  if(readingNote){closeEmperorNote();return;}
+  discoveryOpen=false;wolfDialogue.hidden=true;draw(eyesClosed);return;
+ }
+ if(screen==='play' && !changingRoom){
+  const body=nearbyFallenWolf();
+  if(body>=0 && body!==dismissedWolf){
+   dismissedWolf=body;
+   if(body===0 && !gemsFound){
+    gemsFound=true;
+    unlockEffects();
+    awardGems(5);
+    showDiscovery('Found 5 gems');
+   }else draw(eyesClosed);
+   return;
+  }
+  if(nearCartArmor() && !plankInReach()){unlockEffects();findArmor();return;}
+ }
+ if(wolfLine>=0){speakWolf();return;}
+ if(screen==='play' && !changingRoom){
+  if(plankInReach()){
+   if(inventory.size>=16){showInfo('Inventory full');return;}
+   document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:woodenPlank}));
+   plankTaken=true;
+   presentAcquisition(woodenPlank.id,'Wooden Plank obtained');
+   return;
+  }
+  if(washoutInReach()){
+   if(inventory.has(woodenPlank.id)){
+    bridgeBuilt=true;
+    document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:{id:woodenPlank.id,value:null}}));
+    showInfo('Crossing repaired');
+   }else{
+    showInfo(plankTaken?'I left the plank in storage':'A plank could bridge this');
+   }
+   draw(eyesClosed);
+   return;
+  }
+ }
+ if(screen==='inventory'){ inventoryAction();return; }
+ if(screen!=='play' || punching || jabFrame || chestLid) return;
+ if(changingRoom) return;
+ if(shopkeeperInReach()){stop();shopChoice=0;showShopDialogue('hello');draw(eyesClosed);return;}
+ const landmark=approachLandmark();
+ const interaction=millAction();
+ const drop=nearbyMillDrop() || nearbyBossPotion();
+ if(drop){
+  const owned=inventory.get(drop.item.id);
+  if(!owned && inventory.size>=16){showInfo('Inventory full');return;}
+  if(drop.item===emperorNote){readEmperorNote('floor');return;}
+  document.dispatchEvent(new CustomEvent('game:inventory-change',{
+   detail:{...potion,value:(owned?.value??0)+1}
+  }));
+  if(sluiceRoom) bossPotions.splice(bossPotions.indexOf(drop),1);
+  else if(millVault) millDrop.vaultPotion=null;
+  else millDrop.potion=null;
+  presentAcquisition(potion.id,'Potion obtained');
+  return;
+ }
+ if(interaction==='Mill Engraving'){showInfo('I → III → II');return;}
+ if(interaction.startsWith('Lever ')){pullVaultLever(interaction.slice(6));return;}
+ if(interaction==='Locked Grate'){showInfo('The levers control it.');return;}
+ if(interaction==='Treasure Chest'){openVaultChest();return;}
+ if(interaction==='Large Chest'){startSluiceBoss();return;}
+ if(interaction==='Take Scent'){collectScent();return;}
+ if(interaction==='Shortcut Door'){showInfo('The shortcut door is shut.');return;}
+ if(interaction==='Pull the gate lever'){
+  millGateOpen=true;
+  queueStorySave();
+  playAttackSound('crack');
+  showInfo('The iron grate rises.');
+  draw(eyesClosed);
+  return;
+ }
+ if(interaction==='Iron Grate'){showInfo('There must be a lever nearby.');return;}
+ if(landmark){
+  showInfo(landmark==='Service Gate'?'Latched from the mill side':landmark);
+  return;
+ }
+ if(gateInReach()){
+  gateOpen=true;
+  queueStorySave();
+  playAttackSound('crack');
+  showInfo('Both gates opened');
+  draw(eyesClosed);
+  return;
+ }
+ if(chestInReach()){openChest();return;}
+ if(daggerInReach()){
+  if(inventory.size>=16){showInfo("Inventory full");return;}
+  dagger.available=false;
+  document.dispatchEvent(new CustomEvent('game:inventory-change',{
+   detail:daggerItem
+  }));
+  presentAcquisition('dagger','Dagger obtained',()=>{
+   showDiscovery('(Press {Select} to view inventory and add equipment)');
+  });
+  return;
+ }
+ const object=objectAt(playerX,playerY,true);
+ if(object && object!==crate && !grainCrates.includes(object) && !storageCrates.includes(object)){
+  document.dispatchEvent(new CustomEvent('game:object-interact',{detail:{id:object.id}}));
+  return;
+ }
+ if(equippedItem!==null){
+  const attack=weaponAttacks[inventory.get(equippedItem)?.weaponClass];
+  if(!attack) return;
+  unlockEffects();
+  jabFrame=1;
+  draw(eyesClosed);
+  jabTimer=setTimeout(()=>{
+   jabFrame=2;
+   playAttackSound('swipe');
+   if(equippedItem==='grass-bow') releaseArrow(attack.reach);
+   else damageInReach(attack.reach);
+   draw(eyesClosed);
+   jabTimer=setTimeout(()=>{endPunch();draw(eyesClosed);},attack.recovery);
+  },attack.windup);
+  return;
+ }
+ unlockEffects();
+ punching=true;
+ playAttackSound('punch');
+ damageInReach(11);
+ draw(eyesClosed);
+ punchTimer=setTimeout(()=>{
+  endPunch();
+  draw(eyesClosed);
+ },170);
+}
+const jumpButton=document.querySelector('#action-b');
+jumpButton.addEventListener('pointerdown',event=>{
+ if(event.button!==0) return;
+ event.preventDefault();
+ startJump();
+});
+jumpButton.addEventListener('click',event=>{
+ if(event.detail===0) startJump();
+});
+function startJump(){
+ if(raisedItem || drowningAt!==null || bossControlsLocked()) return;
+ if(readingNote){closeEmperorNote();return;}
+ if(shopStep!==null){
+  showShopDialogue(shopStep==='buy' || shopStep==='sell'?'choice':null);
+  draw(eyesClosed);
+  return;
+ }
+ if(screen==='inventory' || screen==='stats'){
+  if(pendingEquip){pendingEquip=null;renderInventory();}
+  else setScreen('play');
+  return;
+ }
+ if(screen!=='play' || discoveryOpen || wolfLine>=0 || jump || chestLid || changingRoom) return;
+ restFeet();
+ const direction=heldDirection??Array.from(heldKeys).at(-1);
+ jump={elapsed:0,height:standingHeight,launchHeight:standingHeight,direction,fromDpad:heldDirection!==null,distance:0,safeX:playerX,safeY:playerY};
+ resumeJump();
+}
+function resumeJump(){
+ if(!jump) return;
+ lastJumpFrame=null;
+ jumpFrame=requestAnimationFrame(advanceJump);
+}
+function advanceJump(now){
+ if(lastJumpFrame!==null) jump.elapsed+=now-lastJumpFrame;
+ lastJumpFrame=now;
+ const progress=Math.min(1,jump.elapsed/jumpDuration);
+ const previousHeight=jump.height;
+ jump.height=4*jumpPeak*progress*(1-progress)+jump.launchHeight*(1-progress);
+ const platform=platformAt(playerX,playerY);
+ if(platform && previousHeight>=platform.height && jump.height<platform.height){
+  playerX=platform.x+platform.width/2;
+  playerY=platform.seatY+platform.height;
+  standingHeight=platform.height;
+  jump=null;
+  draw(eyesClosed);
+  return;
+ }
+ if(objectAt(playerX,playerY)){
+  // Return to the last unobstructed footprint if the jump falls short.
+  playerX=jump.safeX;
+  playerY=jump.safeY;
+ }
+ const distance=Math.floor(progress*jumpDuration*2/55);
+ if(jump.direction){
+  while(jump.distance<distance){
+   jump.distance++;
+   move(jump.direction,true);
+   if(!jump) return;
+  }
+ }
+ if(progress===1){
+  standingHeight=0;jump=null;
+  checkSluiceFooting();
+  if(drowningAt===null) collectGem();
+ }
+ else jumpFrame=requestAnimationFrame(advanceJump);
+ draw(eyesClosed);
+}
+function walkIntoDoor(x,y,dx,dy){
+ let destination;
+ if(dx<0 && x<=walkMinX){
+  if(millStorage && y>=110 && y<=122) destination='mill-press-from-storage';
+  else if(millEntry && y>=96 && y<=108) destination='mill-exit';
+  else if(sluiceRoom && y>=96 && y<=108) destination='mill-storage-from-sluice';
+ }else if(dx>0 && x>=walkMaxX){
+  if(millPress && y>=110 && y<=122) destination='mill-storage';
+  else if(millApproach && y>=91 && y<=107) destination='mill-entry';
+ }else if(dy<0){
+  if(millStorage && storageStairsOpen && y===storageStairLip && x>=72 && x<=87) destination='mill';
+  else if(sluiceRoom && scentUnlocked && y===shortcutStairLip && x>=121 && x<=137){
+   endDemo();
+   return true;
+  }
+  else if(millApproach && x>=115 && x<=123 && y===77) destination='mill-shop';
+  else if(millEntry && millGateOpen && x>=71 && x<=89 && y===49) destination='mill-grain';
+  else if(millGrain && x>=114 && x<=134 && y===outdoorWalkTop) destination='mill-press';
+  else if(y===outdoorWalkTop){
+   if(millPress && x>=70 && x<=89) destination='mill-vault';
+   else if(millApproach && x>=67 && x<=92) destination='ditch-south';
+   else if(ditch && x>=67 && x<=92) destination='yard';
+   else if(yard && !inMill && !inShop && !millApproach && !ditch && x>=72 && x<=87){
+    changeRoom();
+    return true;
+   }
+  }
+ }else if(dy>0 && y>=walkBottomY){
+  if(millVault && x>=72 && x<=87) destination='mill-press-from-vault';
+  else if(millPress && x>=72 && x<=87) destination='mill-grain-from-press';
+  else if(millGrain && x>=71 && x<=88) destination='mill-entry-from-grain';
+  else if(inShop && x>=71 && x<=88) destination='shop-exit';
+  else if(ditch && bridgeBuilt && x>=72 && x<=87) destination='mill-approach';
+  else if(yard && !inMill && !inShop && !ditch && !millApproach && gateOpen && x>=67 && x<=92) destination='ditch-north';
+  else if(!yard && x>=70 && x<=89){
+   changeRoom();
+   return true;
+  }
+ }
+ if(!destination) return false;
+ changeRoad(destination);
+ return true;
+}
+function move(direction,airborne=false){
+ if(raisedItem || readingNote || drowningAt!==null || bossControlsLocked()) return;
+ if(shopStep!==null){
+  if(shopStep==='buy' && !airborne && (direction==='ArrowDown' || direction==='ArrowUp')){
+   stockCursor=(stockCursor+(direction==='ArrowDown'?1:shopItems.length-1))%shopItems.length;
+   renderShopStock();
+  }
+  if(shopStep==='choice' && !airborne){
+   shopChoice=(direction==='ArrowRight' || direction==='ArrowDown')?1:0;
+   showShopDialogue('choice');
+  }
+  return;
+ }
+ if(screen==='inventory'){moveInventory(direction);return;}
+ if(screen==='stats' && scentUnlocked){
+  if(direction==='ArrowDown' || direction==='ArrowRight') highlightScent(true);
+  if(direction==='ArrowUp' || direction==='ArrowLeft') highlightScent(false);
+  return;
+ }
+ if(screen!=='play' || discoveryOpen || wolfLine>=0 || chestLid || changingRoom || (jump && !airborne)) return;
+ if(facing!==direction && !jabFrame){
+  facing=direction;
+  restFeet();
+ }
+ const [dx,dy]=directions.get(direction);
+ const x=playerX+dx, y=playerY+dy;
+ if(!jump && standingHeight===0 && walkIntoDoor(x,y,dx,dy)) return;
+ if(millStorage && storageStairsOpen && x>=72 && x<=87 && y>=89 && y<storageStairLip) return;
+ if(sluiceRoom && scentUnlocked && x>=121 && x<=137 && y>=110 && y<shortcutStairLip) return;
+ if(millEntry && y<53 && (x<69 || x>91 || !millGateOpen)) return;
+ if(sluiceRoom && overSluiceWater(x) && y<sluiceChannel.top) return;
+ if(ditch && y>=109 && y<=126 && (!bridgeBuilt || x<72 || x>87)) return;
+ if(x<walkMinX || x>walkMaxX || y<(yard?outdoorWalkTop:65) || y>walkBottomY) return;
+ if(objectAt(x,y)) return;
+ playerX=x;
+ playerY=y;
+ checkPressContact();
+ if(changingRoom) return;
+ if(jump){
+  if(!objectAt(x,y,false,0)){
+   jump.safeX=x;
+   jump.safeY=y;
+  }
+  draw(eyesClosed);
+  return;
+ }
+ standingHeight=platformAt(x,y)?.height??0;
+ checkSluiceFooting();
+ if(drowningAt!==null) return;
+ checkSpiderContact();
+ if(changingRoom) return;
+ collectGem();
+ const now=performance.now();
+ if(now>=nextFootstep){
+  playAttackSound(yard && !inShop && !inMill?'gravel':'step');
+  nextFootstep=now+310;
+ }
+ stride=Math.floor(steps++/3)%2===0?1:-1;
+ clearTimeout(idleTimer);
+ idleTimer=setTimeout(restFeet,140);
+ draw(eyesClosed);
+}
+function restFeet(){
+ clearTimeout(idleTimer);
+ stride=0;
+ steps=0;
+ draw(eyesClosed);
+}
+const walkStepInterval=31;
+const heldKeys=new Set();
+let keyboardWalkTimer;
+document.addEventListener('keydown',event=>{
+ if(!directions.has(event.key)) return;
+ setInputMode('keyboard');
+ event.preventDefault();
+ if(event.repeat || heldKeys.has(event.key)) return;
+ if(screen==='play') unlockEffects();
+ heldKeys.add(event.key);
+ move(event.key);
+ if(screen!=='play' || shopStep!==null) return;
+ stopKeyboardWalk();
+ keyboardWalkTimer=setInterval(()=>{
+  if(screen!=='play' || shopStep!==null) return;
+  const direction=Array.from(heldKeys).at(-1);
+  if(direction) move(direction);
+ },walkStepInterval);
+});
+document.addEventListener('keyup',event=>{
+ heldKeys.delete(event.key);
+ if(!heldKeys.size) stopKeyboardWalk();
+ if(jump && !jump.fromDpad && jump.direction===event.key) jump.direction=null;
+});
+const dpad=document.querySelector('.dpad');
+const directionButtons=new Map(Array.from(dpad.querySelectorAll('button'),button=>[button.dataset.direction,button]));
+let heldPointer=null, heldDirection=null, repeat;
+function setHeldDirection(direction){
+ if(direction===heldDirection) return;
+ directionButtons.get(heldDirection)?.removeAttribute('data-held');
+ heldDirection=direction;
+ directionButtons.get(direction)?.setAttribute('data-held','');
+ if(direction) move(direction);
+}
+function stopKeyboardWalk(){
+ clearInterval(keyboardWalkTimer);
+ keyboardWalkTimer=undefined;
+}
+function stop(){
+ if(jump?.fromDpad) jump.direction=null;
+ clearInterval(repeat);
+ heldPointer=null;
+ setHeldDirection(null);
+ restFeet();
+}
+function directionUnderThumb(event){
+ const bounds=dpad.getBoundingClientRect();
+ const x=event.clientX-(bounds.left+bounds.width/2);
+ const y=event.clientY-(bounds.top+bounds.height/2);
+ if(Math.abs(x)>bounds.width/2+5 || Math.abs(y)>bounds.height/2+5) return null;
+ if(Math.max(Math.abs(x),Math.abs(y))<8) return heldDirection;
+ const horizontal=x<0?'ArrowLeft':'ArrowRight';
+ const vertical=y<0?'ArrowUp':'ArrowDown';
+ if(Math.abs(Math.abs(x)-Math.abs(y))<3 &&
+  (heldDirection===horizontal || heldDirection===vertical)) return heldDirection;
+ return Math.abs(x)>Math.abs(y)?horizontal:vertical;
+}
+dpad.addEventListener('pointerdown',event=>{
+ const direction=event.target.closest('button[data-direction]')?.dataset.direction;
+ if(!direction || (screen!=='play' && screen!=='inventory' && screen!=='stats') || event.button!==0 || heldPointer!==null) return;
+ event.preventDefault();
+ if(screen==='play') unlockEffects();
+ heldPointer=event.pointerId;
+ dpad.setPointerCapture(heldPointer);
+ setHeldDirection(direction);
+ if(screen==='play' && heldPointer!==null){
+  repeat=setInterval(()=>{if(heldDirection) move(heldDirection);},walkStepInterval);
+ }
+});
+dpad.addEventListener('pointermove',event=>{
+ if(event.pointerId===heldPointer) setHeldDirection(directionUnderThumb(event));
+});
+for(const type of ['pointerup','pointercancel','lostpointercapture']){
+ dpad.addEventListener(type,event=>{
+  if(event.pointerId===heldPointer) stop();
+ });
+}
+for(const [direction,button] of directionButtons){
+ button.addEventListener('click',event=>{
+  if(event.detail===0) move(direction);
+ });
+}
+window.addEventListener('blur',()=>{
+ heldKeys.clear();
+ stopKeyboardWalk();
+ if(jump) jump.direction=null;
+ stop();
+});
+const openingScreen=document.querySelector('#opening-screen');
+const endingScreen=document.querySelector('#ending-screen');
+function endDemo(){
+ demoCompleted=true;
+ queueStorySave();
+ setScreen('ending');
+ endingScreen.hidden=false;
+}
+function beginGame(resume=true){
+ if(screen!=='title' || newGameDialog.open) return;
+ if(!testStart && resume && storySave) restoreStorySave(storySave);
+ if(!yard) innThought.readyAt=performance.now()+1000;
+ openingScreen.hidden=true;
+ unlockEffects();
+ startMusic();
+ setScreen('play');
+ queueStorySave();
+}
+const openingStart=document.querySelector('#opening-start');
+const openingNew=document.querySelector('#opening-new');
+const newGameDialog=document.querySelector('#new-game-confirm');
+openingStart.addEventListener('click',()=>beginGame());
+openingNew.addEventListener('click',()=>newGameDialog.showModal());
+document.querySelector('#new-game-cancel').addEventListener('click',()=>newGameDialog.close());
+document.querySelector('#new-game-accept').addEventListener('click',()=>{
+ if(!newGameDialog.open || screen!=='title') return;
+ newGameDialog.close();
+ if(clearStorySave()) beginGame(false);
+});
+document.addEventListener('keydown',event=>{
+ if(event.altKey || event.ctrlKey || event.metaKey || newGameDialog.open) return;
+ const isA=event.code==='KeyZ' || (screen==='title' && event.code==='KeyA');
+ const isB=event.code==='KeyX';
+ const isStart=event.code==='Enter' || event.code==='NumpadEnter';
+ const isSelect=event.code==='ShiftRight';
+ if(!isA && !isB && !isStart && !isSelect) return;
+ event.preventDefault();
+ if(event.repeat) return;
+ setInputMode('keyboard');
+ if(screen==='play') unlockEffects();
+ if(isA) startPunch();
+ else if(isB) startJump();
+ else if(isStart) pressStart();
+ else pressSelect();
+});
+document.addEventListener('pointerdown',event=>{
+ if(event.pointerType==='touch' || event.pointerType==='pen' || event.target?.closest?.('.controller')){
+  setInputMode('pointer');
+ }
+},true);
+function drawOpening(){
+ const art=document.querySelector('#opening-art').getContext('2d');
+ const logo=document.querySelector('#opening-title').getContext('2d');
+ const pixel=(target,x,y,w,h,shade)=>{
+  target.fillStyle=colors[shade];target.fillRect(x,y,w,h);
+ };
+ pixel(art,0,0,160,144,0);
+ pixel(art,5,5,150,134,1);
+ pixel(art,7,7,146,130,0);
+ for(const [x,y] of [[15,18],[137,23],[20,68],[140,71],[22,87],[130,92],[36,80],[118,10],[100,83],[55,93]]){
+  pixel(art,x,y,2,1,2);
+  pixel(art,x+1,y-1,1,3,2);
+ }
+ for(let row=0;row<16;row++){
+  pixel(art,80-row*2,85+row,2+row*4,1,row%4===0?2:1);
+ }
+ pixel(art,49,101,62,20,1);pixel(art,52,102,56,17,0);
+ for(const x of [58,94]){
+  pixel(art,x,105,8,7,2);pixel(art,x+2,106,4,4,3);
+  pixel(art,x+4,105,1,7,0);
+ }
+ pixel(art,75,105,10,16,1);pixel(art,77,107,6,14,2);
+ pixel(art,8,120,144,1,2);
+ const glyphs={
+  T:['111','010','010','010','010'],
+  H:['101','101','111','101','101'],
+  E:['111','100','110','100','111'],
+  I:['0111110','0011100','0011100','0011100','0011100','0011100','0011100','0011100','0111110'],
+  N:['1100011','1110011','1110011','1111011','1101011','1101111','1100111','1100111','1100011']
+ };
+ function lettering(word,y,scale,shade,offset=0){
+  const width=word.length*(glyphs[word[0]][0].length+1)-1;
+  const left=Math.floor((160-width*scale)/2)+offset;
+  let x=left;
+  for(const letter of word){
+   glyphs[letter].forEach((row,dy)=>Array.from(row).forEach((bit,dx)=>{
+    if(bit==='1') pixel(logo,x+dx*scale,y+dy*scale+offset,scale,scale,shade);
+   }));
+   x+=(glyphs[letter][0].length+1)*scale;
+  }
+ }
+ lettering('THE',17,2,3);
+ lettering('INN',33,5,1,3);
+ lettering('INN',33,5,3);
+}
+drawOpening();
+const startButton=document.querySelector('#start');
+const selectButton=document.querySelector('#select');
+const pauseScreen=document.querySelector('#pause-screen');
+const inventoryScreen=document.querySelector('#inventory-screen');
+const inventoryPanel=document.querySelector('#inventory-panel');
+const equipNotice=document.querySelector('#equip-notice');
+let equipNoticeTimer;
+function hideEquipNotice(){
+ clearTimeout(equipNoticeTimer);
+ equipNotice.hidden=true;
+}
+function showEquipNotice(label,equipped=true){
+ hideEquipNotice();
+ equipNotice.textContent=label+(equipped?' is equipped':' is unequipped');
+ equipNotice.hidden=false;
+ equipNoticeTimer=setTimeout(hideEquipNotice,1500);
+ unlockEffects();
+ playPickupSound([587,784]);
+}
+const statsPanel=document.querySelector('#stats-panel');
+const selectHint=document.querySelector('#select-hint');
+function renderSystemHints(){
+ document.querySelector('#pause-resume-hint').textContent='Press '+actionKey('Start')+' to resume';
+ const selectKey=actionKey('Select');
+ selectHint.textContent=screen==='inventory'?'Press '+selectKey+' for Stats':'Press '+selectKey+' to return';
+}
+function setScreen(next){
+ if(raisedItem || drowningAt!==null || bossControlsLocked() || changingRoom || shopStep!==null || discoveryOpen || wolfLine>=0) return;
+ const wasPlaying=screen==='play';
+ sluiceLastFrame=null;
+ screen=next;
+ if(next!=='play') travelerThought.hidden=true;
+ if(next!=='inventory') hideEquipNotice();
+ if(screen!=='inventory'){
+  chestLid=0;
+  chestNotice='';
+ }
+ pendingEquip=null;
+ pauseScreen.hidden=screen!=='pause';
+ inventoryScreen.hidden=screen!=='inventory' && screen!=='stats';
+ inventoryPanel.hidden=screen!=='inventory';
+ statsPanel.hidden=screen!=='stats';
+ renderSystemHints();
+ startButton.setAttribute('aria-pressed',String(!pauseScreen.hidden));
+ selectButton.setAttribute('aria-pressed',String(!inventoryScreen.hidden));
+ if(screen==='inventory') renderInventory();
+ if(screen==='stats') renderStats();
+ if(wasPlaying===(screen==='play')) return;
+ if(screen!=='play'){
+  stopWolfGrowl();
+  clearTimeout(blinkTimer);
+  clearInterval(fireTimer);
+  cancelAnimationFrame(jumpFrame);
+  cancelAnimationFrame(debrisFrame);
+  endPunch();
+  stop();
+ }else{
+  stop();
+  eyesClosed=false;
+  draw(eyesClosed);
+  blinkTimer=setTimeout(blink,1700);
+  resumeJump();
+  resumeDebris();
+  resumeFire();
+ }
+}
+function pressStart(){
+ if(screen==='title'){beginGame();return;}
+ if(!chestLid && (screen==='play' || screen==='pause')) setScreen(screen==='play'?'pause':'play');
+}
+startButton.addEventListener('click',pressStart);
+const selectNext={play:'inventory',inventory:'stats',stats:'play'};
+function pressSelect(){
+ if(chestLid){
+  if(screen==='inventory'){
+   chestView=!chestView;
+   inventoryCursor=0;
+   chestNotice='';
+   renderInventory();
+  }
+  return;
+ }
+ if(selectNext[screen]) setScreen(selectNext[screen]);
+}
+selectButton.addEventListener('click',pressSelect);
+
+const inventory=new Map();
+const equipment=new Map();
+const equipmentFields=new Map(Array.from(document.querySelectorAll('[data-equipment-slot]'),field=>[field.dataset.equipmentSlot,field]));
+let pendingEquip=null;
+const stats=new Map([
+ ['str',{label:'STR',value:10}],
+ ['def',{label:'DEF',value:10}]
+]);
+const chestFields=document.querySelector('#chest-fields');
+const storageGrids=document.querySelector('#storage-grids');
+const chestTitle=document.querySelector('#chest-title');
+const inventoryTitle=document.querySelector('#inventory-title');
+const inventoryFields=document.querySelector('#inventory-fields');
+const statFields=document.querySelector('#stat-fields');
+const skillsPanel=document.querySelector('#skills-panel');
+const scentSkill=document.querySelector('#scent-skill');
+const scentDetails=document.querySelector('#scent-description');
+function highlightScent(highlight){
+ scentSkill.setAttribute('aria-expanded',String(highlight));
+ scentDetails.hidden=!highlight;
+}
+scentDetails.textContent=scentDescription;
+drawScentSymbol(scentSkill.querySelector('canvas').getContext('2d'),0,0);
+scentSkill.addEventListener('click',()=>highlightScent(true));
+scentSkill.addEventListener('focus',()=>highlightScent(true));
+function updateField(fields,event){
+ const {id,label,value,description,strBonus,defBonus,slot,weaponClass}=event.detail??{};
+ if(typeof id!=='string' || !id) return false;
+ if(value===null) return fields.delete(id);
+ if(typeof label!=='string' || !['string','number'].includes(typeof value)) return false;
+ const previous=fields.get(id);
+ fields.set(id,{
+  label,value,
+  description:typeof description==='string'?description:previous?.description,
+  strBonus:Number.isFinite(strBonus)?strBonus:previous?.strBonus,
+  defBonus:Number.isFinite(defBonus)?defBonus:previous?.defBonus,
+  slot:equipmentFields.has(slot)?slot:previous?.slot,
+  weaponClass:typeof weaponClass==='string'?weaponClass:previous?.weaponClass
+ });
+ return true;
+}
+// Dispatch these events on document with {id, label, value}; value:null removes the field.
+let inventoryCursor=0;
+const itemInfo=document.querySelector('#item-info');
+function moveInventory(direction){
+ const [dx,dy]=directions.get(direction);
+ const currentColumn=inventoryCursor%4;
+ if(chestLid && ((!chestView && dx===1 && currentColumn===3) ||
+  (chestView && dx===-1 && currentColumn===0))){
+  chestView=!chestView;
+  inventoryCursor+=chestView?-3:3;
+  chestNotice='';
+  renderInventory();
+  return;
+ }
+ const column=Math.max(0,Math.min(3,inventoryCursor%4+dx));
+ const row=Math.max(0,Math.min(3,Math.floor(inventoryCursor/4)+dy));
+ const next=row*4+column;
+ if(next===inventoryCursor) return;
+ inventoryCursor=next;
+ chestNotice="";
+ pendingEquip=null;
+ renderInventory();
+}
+function renderItemGrid(grid,items,active){
+ grid.replaceChildren();
+ grid.classList.toggle('active',active);
+ for(let slot=0;slot<16;slot++){
+  const cell=document.createElement('li');
+  const entry=items[slot];
+  if(active && slot===inventoryCursor) cell.className='selected';
+  if(entry){
+   const [id,item]=entry;
+   const icon=document.createElement('span');
+   icon.className=id==='dagger'?'item-icon dagger':id===woodenPlank.id?'item-icon plank':shopIcons[id]?'item-icon '+shopIcons[id]:'item-icon';
+   icon.setAttribute('aria-hidden','true');
+   const name=document.createElement('span');
+   name.textContent=item.value>1?item.label+' ×'+item.value:item.label;
+   cell.append(id===strawArmor.id?armorIcon():id===strawHelmet.id?helmetIcon():icon,name);
+   if(equipment.get(item.slot)===id){
+    cell.classList.add('equipped');
+    cell.setAttribute('aria-label',item.label+' (equipped)');
+   }
+  }
+  grid.append(cell);
+ }
+}
+function renderInventory(){
+ const storage=chestLid!==0;
+ const pack=Array.from(inventory.entries());
+ inventoryPanel.classList.toggle('storage',storage);
+ storageGrids.classList.toggle('split',storage);
+ inventoryTitle.textContent=storage?'Pack':'Inventory';
+ chestTitle.hidden=!storage;
+ chestFields.hidden=!storage;
+ renderItemGrid(inventoryFields,pack,!storage || !chestView);
+ let items=pack;
+ if(storage){
+  const stored=Array.from(chestItems.entries());
+  renderItemGrid(chestFields,stored,chestView);
+  if(chestView) items=stored;
+  selectHint.textContent='←/→ or '+actionKey('Select')+': Switch · '+actionKey('B')+': Close';
+ }
+ const entry=items[inventoryCursor];
+ itemInfo.textContent=chestNotice;
+ if(!entry || chestNotice) return;
+ const [id,{value,description,strBonus,defBonus,slot,label}]=entry;
+ if(pendingEquip===id){
+  itemInfo.textContent='Replace '+inventory.get(equipment.get(slot)).label+' with '+label+'? Press '+actionKey('A')+' to Confirm';
+  return;
+ }
+ const bonus=[strBonus===undefined?'':(strBonus>=0?'+':'')+strBonus+' STR',defBonus===undefined?'':(defBonus>=0?'+':'')+defBonus+' DEF'].filter(Boolean).join(' · ');
+ const attribute=id==='dagger'?'Weapon':id==='gems'?'Quantity: '+value:'';
+ itemInfo.textContent=[description,attribute,bonus].filter(Boolean).join(' · ');
+ const prompt=document.createElement('span');
+ prompt.className='inventory-item-detail';
+ const press='Press '+actionKey('A')+' to ';
+ prompt.textContent=chestLid?press+(chestView?'Take':'Store'):slot?press+(equipment.get(slot)===id?'Unequip':'Equip'):
+  id===woodenPlank.id?'Use at the washout':press+(id===emperorNote.id?'Read':'Use');
+ itemInfo.append(prompt);
+}
+function transferChestItem(){
+ const source=chestView?chestItems:inventory;
+ const destination=chestView?inventory:chestItems;
+ const entry=Array.from(source.entries())[inventoryCursor];
+ if(!entry) return;
+ const [id,item]=entry;
+ const existing=destination.get(id);
+ if(!existing && destination.size>=16){
+  chestNotice=chestView?'Inventory full':'Chest full';
+ }else{
+  if(existing && (typeof existing.value!=='number' || typeof item.value!=='number')){
+   chestNotice='Item already stored';
+   renderInventory();
+   return;
+  }
+  destination.set(id,existing?{...item,value:existing.value+item.value}:item);
+  if(chestView){source.delete(id);queueStorySave();}
+  else document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:{id,value:null}}));
+  chestNotice=(chestView?'Took ':'Stored ')+item.label;
+ }
+ renderInventory();
+}
+function inventoryAction(){
+ if(chestLid){transferChestItem();return;}
+ const entry=Array.from(inventory.entries())[inventoryCursor];
+ if(!entry) return;
+ const [id,item]=entry;
+ if(id===woodenPlank.id) return;
+ if(id===emperorNote.id){readEmperorNote('inventory');return;}
+ if(id==='potion'){
+  const restored=missingHp>0;
+  missingHp=Math.max(0,missingHp-hpPerStar);
+  document.dispatchEvent(new CustomEvent('game:inventory-change',{
+   detail:{id,label:item.label,value:item.value===1?null:item.value-1}
+  }));
+  unlockEffects();playPickupSound([440,660,880]);
+  itemInfo.textContent=restored?'Life restored':'Potion used';
+  return;
+ }
+ if(!item.slot){
+  document.dispatchEvent(new CustomEvent('game:item-use',{detail:{id}}));
+  return;
+ }
+ const current=equipment.get(item.slot);
+ const equipping=current!==id;
+ if(equipping && current && pendingEquip!==id){
+  pendingEquip=id;
+  renderInventory();
+  return;
+ }
+ if(equipping) equipment.set(item.slot,id);
+ else equipment.delete(item.slot);
+ showEquipNotice(item.label,equipping);
+ pendingEquip=null;
+ if(item.slot==='weapon'){
+  document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:equipping?id:null}}));
+ }
+ renderStats();
+ renderInventory();
+ queueStorySave();
+}
+document.addEventListener('game:inventory-change',event=>{
+ const {id,value}=event.detail??{};
+ if(value!==null && !inventory.has(id) && inventory.size>=16) return;
+ if(!updateField(inventory,event)) return;
+ pendingEquip=null;
+ if(value===null){
+  for(const [slot,equipped] of equipment){
+   if(equipped!==id) continue;
+   equipment.delete(slot);
+   if(slot==='weapon') document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:null}}));
+  }
+ }
+ renderStats();
+ renderInventory();
+ queueStorySave();
+});
+function renderStats(){
+ skillsPanel.hidden=!scentUnlocked;
+ highlightScent(false);
+ statFields.replaceChildren();
+ armorEquipped=equipment.get('body')===strawArmor.id;
+ helmetEquipped=equipment.get('head')===strawHelmet.id;
+ const defenseBonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.defBonus??0),0);
+ hpPerStar=Math.max(1,baseHpPerStar+defenseBonus);
+ const hpLabel=document.createElement('dt'),hpValue=document.createElement('dd');
+ hpLabel.textContent='HP';hpValue.textContent=currentHp()+' / '+maxHp();
+ statFields.append(hpLabel,hpValue);
+ const bonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.strBonus??0),0);
+ for(const [id,{label,value}] of stats){
+  const name=document.createElement('dt');
+  const field=document.createElement('dd');
+  name.textContent=label;
+  field.textContent=typeof value==='number'?value+(id==='str'?bonus:id==='def'?defenseBonus:0):value;
+  statFields.append(name,field);
+ }
+ for(const [slot,field] of equipmentFields){
+  const item=inventory.get(equipment.get(slot));
+  const bonuses=[];
+  if(item?.strBonus!==undefined) bonuses.push('STR '+(item.strBonus>=0?'+':'')+item.strBonus);
+  if(item?.defBonus!==undefined) bonuses.push('DEF '+(item.defBonus>=0?'+':'')+item.defBonus);
+  field.textContent=item?item.label+(bonuses.length?' ('+bonuses.join(', ')+')':''):'—';
+  if(item && equipment.get(slot)===strawArmor.id) field.prepend(armorIcon());
+  if(item && equipment.get(slot)===strawHelmet.id) field.prepend(helmetIcon());
+  if(item && (equipment.get(slot)==='dagger' || shopIcons[equipment.get(slot)])){
+   const icon=document.createElement('span');
+   icon.className='item-icon '+(shopIcons[equipment.get(slot)]??'dagger');
+   icon.setAttribute('aria-hidden','true');
+   field.prepend(icon);
+  }
+ }
+}
+const storySaveKey='the-inn.story-begins.save.v1';
+const storyRooms={
+ inn:'inn',yard:'yard-checkpoint',ditch:'ditch-north','mill-approach':'mill-approach','mill-shop':'mill-shop',
+ 'mill-entry':'mill-entry','mill-grain':'mill-grain','mill-press':'mill-press','mill-vault':'mill-vault',
+ 'mill-storage':'mill-storage',mill:'mill'
+};
+const itemCatalog=new Map(
+ [daggerItem,woodenPlank,strawArmor,strawHelmet,emperorNote,...shopItems].map(item=>[item.id,item])
+);
+const saveNotice=document.querySelector('#save-notice');
+let storySave=null,saveQueued=false,saveBlocked=false,demoCompleted=false;
+function checkpointRoom(){
+ if(millEntry) return 'mill-entry';
+ if(millGrain) return 'mill-grain';
+ if(millPress) return 'mill-press';
+ if(millVault) return 'mill-vault';
+ if(millStorage) return 'mill-storage';
+ if(sluiceRoom) return 'mill';
+ if(inShop) return 'mill-shop';
+ if(millApproach) return 'mill-approach';
+ if(ditch) return 'ditch';
+ return yard?'yard':'inn';
+}
+function integer(value,min,max,fallback=min){
+ return Number.isSafeInteger(value) && value>=min && value<=max?value:fallback;
+}
+function packForSave(items){
+ return Array.from(items,([id,item])=>[id,item.value]).filter(([id])=>itemCatalog.has(id));
+}
+function restorePack(items,entries){
+ items.clear();
+ for(const entry of entries.slice(0,16)){
+  if(!Array.isArray(entry)) continue;
+  const [id,count]=entry;
+  const item=itemCatalog.get(id);
+  if(item) items.set(id,{...item,value:id==='potion'?integer(count,1,999,1):1});
+ }
+}
+function pointForSave(drop){
+ return drop?{x:Math.round(drop.x),y:Math.round(drop.y)}:null;
+}
+function restoreDrop(point,item){
+ if(!point || integer(point.x,0,159,-1)<0 || integer(point.y,0,143,-1)<0) return null;
+ return {x:point.x,y:point.y,item};
+}
+function makeStorySave(){
+ return {
+  version:1, room:checkpointRoom(), lifeStars, missingHp, gems,
+  inventory:packForSave(inventory), equipment:Array.from(equipment), chest:packForSave(chestItems),
+  progress:{
+   gateOpen,gemsFound,armorFound,plankTaken,bridgeBuilt,wolfGreeted,
+   ditchCleared:wolf.hp===0 && wolfLine<0,daggerTaken:!dagger.available,
+   innCrateBroken:crate.broken,innGemAvailable:crateGem.available,
+   millGateOpen,entryPotionDropped:potionDropped,
+   entryPotion:pointForSave(millDrop.potion),vaultPotion:pointForSave(millDrop.vaultPotion),
+   note:pointForSave(millDrop.note),vaultGem:vaultGem.available?pointForSave(vaultGem):null,
+   entrySpiders:spiders.map(spider=>spider.hp===0),pressSpiders:pressSpiders.map(spider=>spider.hp===0),
+   vaultSpiders:vaultSpiders.map(spider=>spider.hp===0),
+   grass:grassTiles.map(tile=>[tile.hp===0,tile.gemAvailable]),
+   grainCrates:grainCrates.map(box=>box.hp===0),
+   vaultProgress,vaultChestOpen:vaultChest.open,
+   storageCrates:storageCrates.map(box=>[box.hp===0,box.reward]),
+   storageDrops:storageDrops.filter(drop=>drop.available).map(drop=>({...pointForSave(drop),reward:drop.reward})),
+   storageStairsOpen,bossDefeated:boss.phase==='defeated',scentUnlocked,demoCompleted,
+   bossPotions:boss.phase==='defeated'?bossPotions.map(pointForSave):[]
+  }
+ };
+}
+function showSaveUnavailable(){
+ saveBlocked=true;
+ saveNotice.textContent='Browser saving is unavailable. You can still play this session.';
+ saveNotice.hidden=false;
+}
+function clearStorySave(){
+ try{window.localStorage.removeItem(storySaveKey);}
+ catch(error){
+  saveNotice.textContent='The save could not be erased. You can still choose Continue.';
+  saveNotice.hidden=false;
+  return false;
+ }
+ storySave=null;
+ saveBlocked=false;
+ saveNotice.hidden=true;
+ return true;
+}
+function readStorySave(){
+ let raw;
+ try{raw=window.localStorage.getItem(storySaveKey);}
+ catch(error){showSaveUnavailable();return null;}
+ if(!raw) return null;
+ try{
+  const data=JSON.parse(raw);
+  if(data?.version!==1 || !Object.hasOwn(storyRooms,data.room) ||
+   !data.progress || typeof data.progress!=='object' ||
+   !Array.isArray(data.inventory) || !Array.isArray(data.equipment) || !Array.isArray(data.chest)) return null;
+  return data;
+ }catch(error){return null;}
+}
+function queueStorySave(){
+ if(testStart || saveBlocked || saveQueued || screen==='title' || defeated) return;
+ saveQueued=true;
+ queueMicrotask(()=>{
+  saveQueued=false;
+  // Inventory events can fire before their room flags or shop balance finish updating.
+  if(defeated) return;
+  try{
+   const save=makeStorySave();
+   window.localStorage.setItem(storySaveKey,JSON.stringify(save));
+   storySave=save;
+  }catch(error){showSaveUnavailable();}
+ });
+}
+function restoreDefeated(list,saved){
+ if(!Array.isArray(saved)) return;
+ for(const [index,object] of list.entries()){
+  if(saved[index]===true) object.hp=0;
+ }
+}
+function restoreStorySave(save){
+ const progress=save.progress;
+ lifeStars=integer(save.lifeStars,1,10,1);
+ missingHp=integer(save.missingHp,0,10000);
+ gems=integer(save.gems,0,999999);
+ restorePack(inventory,save.inventory);
+ restorePack(chestItems,save.chest);
+ equipment.clear();
+ for(const entry of save.equipment){
+  if(!Array.isArray(entry)) continue;
+  const [slot,id]=entry;
+  if(equipmentFields.has(slot) && inventory.get(id)?.slot===slot) equipment.set(slot,id);
+ }
+ equippedItem=equipment.get('weapon')??null;
+ gateOpen=progress.gateOpen===true;
+ gemsFound=progress.gemsFound===true;
+ armorFound=progress.armorFound===true;
+ plankTaken=progress.plankTaken===true;
+ bridgeBuilt=progress.bridgeBuilt===true;
+ wolfGreeted=progress.wolfGreeted===true;
+ if(progress.ditchCleared===true) wolf.hp=0;
+ dagger.available=progress.daggerTaken!==true;
+ if(progress.innCrateBroken===true){crate.broken=true;crate.hp=0;debrisElapsed=debrisDuration;}
+ crateGem.available=progress.innGemAvailable===true;
+ millGateOpen=progress.millGateOpen===true;
+ potionDropped=progress.entryPotionDropped===true;
+ millDrop.potion=restoreDrop(progress.entryPotion,potion);
+ millDrop.vaultPotion=restoreDrop(progress.vaultPotion,potion);
+ millDrop.note=restoreDrop(progress.note,emperorNote);
+ const gem=restoreDrop(progress.vaultGem);
+ if(gem) Object.assign(vaultGem,{x:gem.x,y:gem.y,available:true});
+ restoreDefeated(spiders,progress.entrySpiders);
+ restoreDefeated(pressSpiders,progress.pressSpiders);
+ restoreDefeated(vaultSpiders,progress.vaultSpiders);
+ restoreDefeated(grainCrates,progress.grainCrates);
+ if(Array.isArray(progress.grass)){
+  for(const [index,tile] of grassTiles.entries()){
+   const state=progress.grass[index];
+   if(!Array.isArray(state)) continue;
+   if(state[0]===true) tile.hp=0;
+   tile.gemAvailable=state[1]===true;
+  }
+ }
+ vaultProgress=integer(progress.vaultProgress,0,vaultSequence.length);
+ vaultUnlocked=vaultProgress===vaultSequence.length;
+ vaultChest.open=progress.vaultChestOpen===true;
+ if(Array.isArray(progress.storageCrates) && progress.storageCrates.length===storageCrates.length){
+  for(const [index,box] of storageCrates.entries()){
+   const state=progress.storageCrates[index];
+   if(!Array.isArray(state)) continue;
+   if(state[0]===true) box.hp=0;
+   if([null,5,'star'].includes(state[1])) box.reward=state[1];
+  }
+ }
+ storageStairsOpen=progress.storageStairsOpen===true && storageCrates.every(box=>box.hp===0);
+ if(Array.isArray(progress.storageDrops)){
+  for(const point of progress.storageDrops.slice(0,3)){
+   const drop=restoreDrop(point);
+   if(drop && [5,'star'].includes(point.reward)){
+    storageDrops.push({...drop,available:true,reward:point.reward});
+   }
+  }
+ }
+ scentUnlocked=progress.scentUnlocked===true;
+ if(progress.bossDefeated===true || scentUnlocked){
+  boss.phase='defeated';
+  boss.hp=0;
+  if(Array.isArray(progress.bossPotions)){
+   for(const point of progress.bossPotions.slice(0,20)){
+    const drop=restoreDrop(point,potion);
+    if(drop) bossPotions.push(drop);
+   }
+  }
+ }
+ demoCompleted=progress.demoCompleted===true;
+ enterRoad(storyRooms[save.room]);
+ if(yard && !gateOpen && !ditch) yardThought.readyAt=performance.now()+1000;
+ document.querySelector('#inventory-gems').textContent=gems;
+ renderStats();
+}
+function refreshInputHints(){
+ document.documentElement.setAttribute('data-input',inputMode);
+ document.querySelector('#opening-hint').hidden=!desktopControls && inputMode!=='keyboard';
+ openingStart.textContent=storySave && !testStart?'Continue':'Press ‘'+actionKey('A')+'’ To Start';
+ document.querySelector('#dialogue-continue').textContent=actionKey('A')+' · Continue';
+ if(discoveryOpen) renderDiscoveryMessage();
+ renderSystemHints();
+ if(shopStep!==null) renderShopControls();
+ if(screen==='inventory') renderInventory();
+}
+function setInputMode(mode){
+ if(inputMode===mode) return;
+ inputMode=mode;
+ refreshInputHints();
+ if(screen==='play') refreshInfo();
+}
+if(!testStart){
+ storySave=readStorySave();
+ if(storySave){
+  openingStart.textContent='Continue';
+  openingNew.hidden=false;
+ }
+}
+if(testStart){
+ inventory.set(grassBow.id,{...grassBow,value:1});
+ equipment.set(grassBow.slot,grassBow.id);
+ document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:grassBow.id}}));
+}
+renderStats();
+if(desktopControls) document.documentElement.setAttribute('data-desktop-controls','');
+refreshInputHints();
+document.addEventListener('game:stat-change',event=>{
+ if(updateField(stats,event)) renderStats();
+});
+</script></html>
