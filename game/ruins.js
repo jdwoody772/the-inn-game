@@ -856,7 +856,7 @@ function drawStrongholdVista() {
  }
  ctx.save();
  ctx.translate(8, 3);
- drawBack(false, false, equipment.get('body') === stoneArmor.id);
+ drawBack(false, false, equipment.get('body'));
  drawFeet();
  ctx.restore();
 }
@@ -1014,6 +1014,25 @@ const stoneCuirassProfile = [
  '.0223220',
  '..01110.'
 ];
+// Both profiles use the same coordinate frame as Luca's mirrored side sprites.
+const strawArmorFacings = {
+ ArrowDown: [
+  '.02....20.', '0122222210', '0212121210',
+  '.02121220.', '.01222120.', '..011110..'
+ ],
+ ArrowUp: [
+  '.02....20.', '0121111210', '0212221210',
+  '.01212120.', '.02121210.', '.01222210.', '..011110..'
+ ],
+ ArrowRight: [
+  '.02..2..', '0122212.', '02121120',
+  '01212210', '.0122210', '..01110.'
+ ],
+ ArrowLeft: [
+  '.02..2..', '0122221.', '02122120',
+  '01221120', '.0121210', '..01110.'
+ ]
+};
 function drawStoneEquipment(rows, x, y) {
  const left = x - Math.floor(rows[0].length / 2);
  for (const [dy, row] of rows.entries()) {

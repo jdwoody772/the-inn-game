@@ -252,12 +252,13 @@ const testParams=new URLSearchParams(location.search);
 const testRoom=testParams.get('mill');
 const testAfterBoss=testRoom==='15' && testParams.get('after')==='boss';
 const testWoods=testRoom==='16';
+const testTown=testRoom==='4';
 const ruinsInteriorNames={19:'Hall of Two Builders',20:'Glyph Archive',21:'The Hunt Below',22:'The Wolf’s Vigil',23:'The Broken Bridge'};
 const ruinsRoomKeys=Object.fromEntries(Object.keys(ruinsInteriorNames).map(n=>['ruins-'+n,'ruins-'+n]));
 function ruinsRoomNumber(destination){
  return Object.hasOwn(ruinsRoomKeys,destination)?Number(destination.slice(6)):0;
 }
-const testRooms={19:'ruins-19',20:'ruins-20',21:'ruins-21',22:'ruins-22',23:'ruins-23','3':'ditch','10':'mill-entry','11':'mill-grain','12':'mill-press','13':'mill-vault','14':'mill-storage','15':'mill','16':'woods-edge','17':'wolf-grove','18':'ruins-approach'};
+const testRooms={19:'ruins-19',20:'ruins-20',21:'ruins-21',22:'ruins-22',23:'ruins-23','3':'ditch','4':'mill-approach','10':'mill-entry','11':'mill-grain','12':'mill-press','13':'mill-vault','14':'mill-storage','15':'mill','16':'woods-edge','17':'wolf-grove','18':'ruins-approach'};
 const testStart=Object.hasOwn(testRooms,testRoom)?testRooms[testRoom]:null;
 const testRuinsInterior=ruinsRoomNumber(testStart);
 let ruinsInterior=testRuinsInterior;
@@ -284,7 +285,7 @@ let inShop=false, shopStep=null, shopChoice=0;
 let ditch=startInDitch, plankTaken=millApproach || inMill, bridgeBuilt=plankTaken, wolfLine=-1;
 const wolf={id:'ditch-wolf',x:84,y:72,width:12,bottom:80,height:14,hp:32,phase:0,ticks:0};
 const fallenWolves=[[41,101],[115,116],[57,117]];
-let gemsFound=false, armorFound=false, armorEquipped=false, helmetEquipped=false;
+let gemsFound=false, armorFound=false, helmetEquipped=false;
 let dismissedWolf=-1, discoveryOpen=false,discoveryMessage='';
 const strawHelmet={id:'straw-helmet',label:'Straw Helmet',value:1,description:'A cap woven from tough straw.',defBonus:1,slot:'head'};
 const strawArmor={id:'straw-armor',label:'Straw Armor',value:1,description:'Woven straw tied with cord.',defBonus:1,slot:'body'};
@@ -1491,9 +1492,9 @@ function drawTraveler(blink){
  if(punching && facing==='ArrowUp') drawRearPunch();
  ctx.save();
  ctx.translate(playerX-80,playerY-105);
- const stoneBody=equipment.get('body')===stoneArmor.id;
+ const body=equipment.get('body');
  if(raisedItem){
-  drawFront(blink,stoneBody);
+  drawFront(blink,body);
   drawFeet();
   drawRaisedItem(raisedItem.id);
  }else if(facing==='ArrowLeft' || facing==='ArrowRight'){
@@ -1501,13 +1502,12 @@ function drawTraveler(blink){
    ctx.translate(160,0);
    ctx.scale(-1,1);
   }
-  drawProfile(blink,stoneBody);
+  drawProfile(blink,body,facing);
  }else{
-  if(facing==='ArrowUp') drawBack(blink,woods && performance.now()<woodsLookBackUntil,stoneBody);
-  else drawFront(blink,stoneBody);
+  if(facing==='ArrowUp') drawBack(blink,woods && performance.now()<woodsLookBackUntil,body);
+  else drawFront(blink,body);
   drawFeet();
  }
- if(armorEquipped) drawStrawArmor(ctx,76,94);
  ctx.restore();
  if(helmetEquipped) drawStrawHelmet(ctx,playerX-7,playerY-23,facing);
  const gearFacing=raisedItem?'ArrowDown':facing;
@@ -2768,6 +2768,32 @@ function drawHangingWolf(){
  rect(77,45,2,1,0);rect(82,45,2,1,0);
  rect(74,47,3,4,0);rect(84,47,3,4,0);
 }
+const shopkeeperHead=[
+ '....00000....',
+ '...0111110...',
+ '..011221110..',
+ '..012211110..',
+ '..013333310..',
+ '.01333333310.',
+ '.03333333330.',
+ '..033323330..',
+ '..023333320..',
+ '..022111220..',
+ '...0222220...',
+ '....00200....'
+];
+function drawShopkeeper(blink){
+ // Tapered shoulders, rolled sleeves, and a shop apron behind the counter.
+ rect(89,65,6,4,0);rect(90,65,4,3,2);
+ rect(86,68,12,12,0);rect(88,68,8,10,2);
+ rect(84,70,4,7,0);rect(96,70,4,7,0);
+ rect(85,71,3,3,2);rect(96,71,3,3,2);
+ rect(85,74,2,3,3);rect(97,74,2,3,3);
+ rect(89,69,1,4,1);rect(94,69,1,4,1);
+ rect(89,72,6,7,1);rect(90,73,4,2,2);rect(90,73,1,1,3);
+ drawStoneEquipment(shopkeeperHead,92,55);
+ rect(89,61,blink?2:1,1,0);rect(94,61,blink?2:1,1,0);
+}
 function drawMillShop(blink){
  rect(0,0,160,144,0);rect(5,7,150,130,2);rect(5,7,150,49,1);
  for(let y=60;y<137;y+=8){
@@ -2786,9 +2812,7 @@ function drawMillShop(blink){
  for(const x of [20,28,36]){
   rect(x,67,4,8,0);rect(x+1,67,2,6,3);
  }
- rect(87,57,10,10,0);rect(89,59,6,7,3);
- rect(88,57,8,3,1);rect(90,62,1,blink?1:2,0);rect(94,62,1,blink?1:2,0);
- rect(85,67,14,12,0);rect(88,68,8,9,2);
+ drawShopkeeper(blink);
  rect(65,77,62,12,0);rect(67,78,58,5,3);rect(67,84,58,3,1);
  rect(112,88,15,15,0);rect(113,88,12,8,2);rect(114,96,11,4,1);
  rect(73,74,7,4,0);rect(74,74,5,3,2);
@@ -2817,11 +2841,10 @@ function drawStrawArmor(target,x,y){
  const pixels=[
   '01...10','1233321','1232321','.13231.','.12321.','.13331.','..111..'
  ];
- const palette=['#4c3821','#694419','#d3a54e','#f0ce79'];
  const previous=target.fillStyle;
  pixels.forEach((row,dy)=>Array.from(row).forEach((pixel,dx)=>{
   if(pixel==='.') return;
-  target.fillStyle=palette[Number(pixel)];
+  target.fillStyle=colors[Number(pixel)];
   target.fillRect(x+dx,y+dy,1,1);
  }));
  target.fillStyle=previous;
@@ -2917,7 +2940,7 @@ function helmetIcon(){
 function drawLucaSatchel(x,y){
  rect(x,y,5,5,0);rect(x+1,y+1,3,3,2);rect(x+1,y+1,3,1,3);rect(x+2,y+2,1,1,0);
 }
-function drawFront(blink,stoneBody=false){
+function drawFront(blink,body){
  drawStoneEquipment(lucaFrontHead,80,82);
  if(blink){
   rect(77,90,2,1,1);rect(82,90,2,1,1);
@@ -2930,7 +2953,8 @@ function drawFront(blink,stoneBody=false){
  rect(76,101,8,1,2);rect(79,101,2,1,3);
  rect(73,96,3,5,0);rect(74,96,2,3,1);
  rect(84,96,3,5,0);rect(84,96,2,3,1);
- if(stoneBody) drawStoneEquipment(stoneCuirassFront,80,95);
+ if(body===stoneArmor.id) drawStoneEquipment(stoneCuirassFront,80,95);
+ if(body===strawArmor.id) drawStoneEquipment(strawArmorFacings.ArrowDown,80,95);
  drawLucaSatchel(83,100);
  rect(74,98,2,3,3);
  if(raisedItem){
@@ -2944,7 +2968,7 @@ function drawFront(blink,stoneBody=false){
   rect(84,98,2,3,3);
  }
 }
-function drawBack(blink,lookBack=false,stoneBody=false){
+function drawBack(blink,lookBack=false,body){
  rect(75,94,10,8,0);rect(73,96,3,5,0);rect(84,96,3,5,0);
  drawStoneEquipment(lucaBackCloak,78,93);
  if(lookBack){
@@ -2954,7 +2978,8 @@ function drawBack(blink,lookBack=false,stoneBody=false){
  }else{
   drawStoneEquipment(lucaBackHead,80,82);
  }
- if(stoneBody) drawStoneEquipment(stoneCuirassBack,80,94);
+ if(body===stoneArmor.id) drawStoneEquipment(stoneCuirassBack,80,94);
+ if(body===strawArmor.id) drawStoneEquipment(strawArmorFacings.ArrowUp,80,94);
  drawLucaSatchel(83,99);
  rect(74,100,1,1,3);rect(86,98,1,3,3);
 }
@@ -2970,7 +2995,7 @@ function drawProfileHead(blink){
  drawStoneEquipment(lucaProfileHead,80,82);
  rect(82,89,blink?2:1,1,blink?1:0);
 }
-function drawProfile(blink,stoneBody=false){
+function drawProfile(blink,body,direction){
  drawStoneEquipment(lucaSideCloak,76,94);
  rect(76-stride*2,101,4,4,1);
  rect(75,94,10,8,0);
@@ -2978,9 +3003,10 @@ function drawProfile(blink,stoneBody=false){
  rect(76,95,9,6,1);rect(75,94,9,2,2);rect(76,96,3,1,2);
  rect(77,97,2,1,2);rect(78,98,2,1,2);rect(79,99,2,1,2);
  drawLucaSatchel(75,99);
- if(stoneBody) drawStoneEquipment(stoneCuirassProfile,80,95);
+ if(body===stoneArmor.id) drawStoneEquipment(stoneCuirassProfile,80,95);
+ if(body===strawArmor.id) drawStoneEquipment(strawArmorFacings[direction],80,95);
  rect(78+stride,96,3,4,1);
- if(stoneBody) rect(79+stride,96,1,2,2);
+ if(body===stoneArmor.id || body===strawArmor.id) rect(79+stride,96,1,2,2);
  rect(79+stride,99,2,2,3);
  rect(80+stride*2,101,4,5,0);rect(81+stride*2,104,4,2,1);
 
@@ -4480,7 +4506,6 @@ function renderStats(){
  document.querySelector('#pounce-description').hidden=!ruinsState.pounce;
  highlightScent(false);
  statFields.replaceChildren();
- armorEquipped=equipment.get('body')===strawArmor.id;
  helmetEquipped=equipment.get('head')===strawHelmet.id;
  const defenseBonus=gearBonus('defBonus');
  hpPerStar=Math.max(1,baseHpPerStar+defenseBonus);
@@ -4766,6 +4791,10 @@ if(testStart){
  equipment.set(grassBow.slot,grassBow.id);
  document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:grassBow.id}}));
 }
+if(testTown){
+ enterRoad(testParams.get('at')==='shop'?'mill-shop':'shop-exit');
+ facing='ArrowUp';
+}
 if(testWoods || testRoom==='17' || testRoom==='18' || testRuinsInterior){
  scentUnlocked=true;
  westTrailRevealed=true;
@@ -4798,7 +4827,7 @@ if(testAfterBoss){
 renderStats();
 if(desktopControls) document.documentElement.setAttribute('data-desktop-controls','');
 refreshInputHints();
-if(testAfterBoss || testWoods || testRoom==='17' || testRoom==='18' || testRuinsInterior) beginGame(false);
+if(testTown || testAfterBoss || testWoods || testRoom==='17' || testRoom==='18' || testRuinsInterior) beginGame(false);
 document.addEventListener('game:stat-change',event=>{
  if(updateField(stats,event)) renderStats();
 });
