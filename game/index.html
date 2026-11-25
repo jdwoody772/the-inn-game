@@ -44,11 +44,6 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 .game-screen{position:relative}
 #opening-screen{position:absolute;inset:8px;z-index:4;overflow:hidden;background:#172e22}
 #opening-screen[hidden]{display:none}
-#ending-screen{position:absolute;inset:8px;z-index:5;display:grid;place-items:center;padding:12px;background:#fff;color:#172e22;text-align:center;font:bold clamp(12px,3.5vw,20px)/1.4 monospace;animation:ending-fade 950ms ease both}
-#ending-screen[hidden]{display:none}
-#ending-screen p{margin:0;animation:ending-fade 750ms ease 950ms both}
-@keyframes ending-fade{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){#ending-screen,#ending-screen p{animation:none}}
 #opening-screen canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
 #opening-title{pointer-events:none;animation:title-flash 1.6s steps(1,end) infinite}
 @keyframes title-flash{0%,72%{opacity:1} 76%,94%{opacity:.65}}
@@ -79,7 +74,7 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 #scent-skill{min-height:28px;margin:0;padding:2px 6px;border:1px solid #789568;font:inherit}
 .scent-icon{width:16px;height:16px;image-rendering:pixelated}
 #scent-skill[aria-expanded="true"]{background:#395548;color:#e5efbd}
-#scent-description{margin:4px 0 0;font-size:clamp(9px,2.8vw,12px);line-height:1.2;color:#c0cf8a}
+#scent-description,#pounce-description{margin:4px 0 0;font-size:clamp(9px,2.8vw,12px);line-height:1.2;color:#c0cf8a}
 #stat-fields,.equipment-fields{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px}
 #stat-fields dd,.equipment-fields dd{margin:0;text-align:right}
 .inventory-screen h3{margin:6px 0 3px;font-size:12px}
@@ -89,6 +84,11 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 .item-grid li{min-width:0;display:grid;justify-items:center;align-content:center;text-align:center;font-size:clamp(8px,2.6vw,12px);line-height:1.05;border:1px solid transparent}
 .item-grid .selected{border-color:#c0cf8a}
 .item-icon{width:12px;height:12px;background:#c0cf8a;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.item-icon.stone-helm,.item-icon.stone-shield,.item-icon.stone-armor,.item-icon.stone-fang{display:inline-block;vertical-align:middle;margin-right:3px}
+.item-icon.stone-helm{clip-path:polygon(10% 32%,30% 8%,70% 8%,90% 32%,90% 90%,65% 90%,65% 63%,36% 63%,36% 90%,10% 90%)}
+.item-icon.stone-shield{clip-path:polygon(8% 10%,92% 10%,87% 65%,50% 95%,13% 65%)}
+.item-icon.stone-armor{clip-path:polygon(0 25%,25% 8%,40% 24%,60% 24%,75% 8%,100% 25%,90% 55%,75% 52%,75% 94%,25% 94%,25% 52%,10% 55%)}
+.item-icon.stone-fang{clip-path:polygon(24% 8%,77% 8%,77% 45%,62% 72%,30% 95%,39% 60%,24% 42%)}
 .item-icon.dagger{display:inline-block;vertical-align:middle;margin-right:3px;clip-path:polygon(92% 0,77% 45%,43% 72%,57% 86%,47% 96%,32% 82%,13% 100%,0 87%,19% 68%,5% 53%,15% 43%,29% 57%,56% 23%)}
 #item-info{border:1px solid #789568;padding:3px 5px;min-height:2.5em;font-size:clamp(9px,2.8vw,12px);line-height:1.15}
 .inventory-heading,.gem-counter{display:flex;align-items:center;gap:5px}
@@ -128,6 +128,7 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 .item-icon.note{width:10px;height:12px;clip-path:polygon(0 0,70% 0,100% 25%,100% 100%,0 100%);background:repeating-linear-gradient(to bottom,#c0cf8a 0 3px,#789568 3px 4px)}
 .item-icon.bow{background:#b5cb72;clip-path:polygon(25% 0,60% 0,90% 25%,100% 50%,90% 75%,60% 100%,25% 100%,25% 91%,33% 9%,41% 9%,33% 91%,58% 89%,80% 69%,90% 50%,80% 31%,58% 11%,25% 11%)}
 .item-icon.shield{background:#b5cb72;clip-path:polygon(5% 10%,50% 0,95% 10%,86% 62%,50% 100%,14% 62%)}
+.item-icon.stone-dagger{background:linear-gradient(135deg,#e3dbac 0 35%,#a8b3a0 36% 62%,#665644 63%);clip-path:polygon(94% 3%,83% 46%,68% 50%,59% 65%,43% 72%,54% 84%,45% 94%,33% 81%,15% 100%,2% 88%,20% 67%,9% 56%,18% 46%,30% 57%,44% 39%,57% 37%)}
 </style>
 <main>
 <button type="button" id="screen-lock" aria-pressed="false">Lock screen <span class="switch-track" aria-hidden="true"></span></button>
@@ -147,7 +148,7 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 <button type="button" id="new-game-cancel" autofocus>Cancel</button>
 <button type="button" id="new-game-accept">Start New Game</button>
 </dialog>
-</div><div id="ending-screen" role="status" hidden><p>…the journey continues soon…</p></div><div id="wolf-dialogue" role="dialog" aria-label="Final words" hidden><span></span><small id="dialogue-continue">A · Continue</small></div><div id="shop-dialogue" role="dialog" aria-label="Mill Shop" hidden><span id="shop-line"></span><div id="shop-options" hidden><span>Buy</span><span>Sell</span></div><ul id="shop-stock" hidden></ul><small id="shop-controls"></small></div><div id="room-fade" aria-hidden="true"></div><div id="traveler-thought" role="status" hidden></div><div id="info-box" role="status" hidden></div><div id="pause-screen" class="pause-screen" role="status" hidden>PAUSED<small id="pause-resume-hint">Press Start to resume</small></div>
+</div><div id="wolf-dialogue" role="dialog" aria-label="Final words" hidden><span></span><small id="dialogue-continue">A · Continue</small></div><div id="shop-dialogue" role="dialog" aria-label="Mill Shop" hidden><span id="shop-line"></span><div id="shop-options" hidden><span>Buy</span><span>Sell</span></div><ul id="shop-stock" hidden></ul><small id="shop-controls"></small></div><div id="room-fade" aria-hidden="true"></div><div id="traveler-thought" role="status" hidden></div><div id="info-box" role="status" hidden></div><div id="pause-screen" class="pause-screen" role="status" hidden>PAUSED<small id="pause-resume-hint">Press Start to resume</small></div>
 <div id="inventory-screen" class="inventory-screen" aria-label="Inventory and stats" hidden>
 <section id="inventory-panel"><header class="inventory-heading"><h2 id="inventory-title">Inventory</h2><h2 id="chest-title" hidden>Chest</h2><span class="gem-counter">Gems <span class="item-icon" aria-hidden="true"></span> <span id="inventory-gems">0</span></span></header><div id="storage-grids"><ul id="inventory-fields" class="item-grid" aria-label="Pack"></ul><ul id="chest-fields" class="item-grid" aria-label="Chest" hidden></ul></div><div id="item-info" role="status"></div><div id="equip-notice" role="status" hidden></div></section>
 <section id="stats-panel" hidden><h2>Stats</h2><dl id="stat-fields"></dl>
@@ -160,7 +161,7 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 <dt>Accessory</dt><dd data-equipment-slot="accessory">—</dd>
 </dl><div id="skills-panel" hidden><h3>Skills</h3>
 <button type="button" id="scent-skill" aria-expanded="false"><canvas class="scent-icon" width="11" height="11" aria-hidden="true"></canvas>Scent</button>
-<p id="scent-description" hidden></p></div></section>
+<p id="scent-description" hidden></p><p id="pounce-description" hidden></p></div></section>
 <small id="select-hint">Press Select for Stats</small>
 </div></div>
 <div class="controller">
@@ -182,6 +183,7 @@ canvas,.dpad button{-webkit-tap-highlight-color:transparent}
 </div>
 <p id="save-notice" role="status" hidden></p>
 </main>
+<script src="ruins.js"></script>
 <script>
 const music=document.querySelector('#inn-music');
 const musicButton=document.querySelector('#music-toggle');
@@ -228,6 +230,8 @@ const infoBox=document.querySelector('#info-box');
 const travelerThought=document.querySelector('#traveler-thought');
 const innThought={text:'Where am I? What is this place?',readyAt:performance.now()+1000,shownAt:null};
 const yardThought={text:'I have to find a way to get to that switch',readyAt:null,shownAt:null};
+const woodsCallThought={text:'…something is calling me back into these woods…',readyAt:null,shownAt:null};
+let woodsLookBackUntil=0;
 const riverThought={text:'The crossing is washed out. I need to find a way across.',readyAt:null,shownAt:null};
 const woodenPlank={id:'wooden-plank',label:'Wooden Plank',value:1,description:'A sturdy board long enough to bridge the washout.'};
 let wolfGreeted=false;
@@ -244,9 +248,19 @@ function restoreFullHp(){
  missingHp=0;
  defeated=false;
 }
-const testRoom=new URLSearchParams(location.search).get('mill');
-const testRooms={'3':'ditch','10':'mill-entry','11':'mill-grain','12':'mill-press','13':'mill-vault','14':'mill-storage','15':'mill'};
+const testParams=new URLSearchParams(location.search);
+const testRoom=testParams.get('mill');
+const testAfterBoss=testRoom==='15' && testParams.get('after')==='boss';
+const testWoods=testRoom==='16';
+const ruinsInteriorNames={19:'Hall of Two Builders',20:'Glyph Archive',21:'The Hunt Below',22:'The Wolf’s Vigil',23:'The Broken Bridge'};
+const ruinsRoomKeys=Object.fromEntries(Object.keys(ruinsInteriorNames).map(n=>['ruins-'+n,'ruins-'+n]));
+function ruinsRoomNumber(destination){
+ return Object.hasOwn(ruinsRoomKeys,destination)?Number(destination.slice(6)):0;
+}
+const testRooms={19:'ruins-19',20:'ruins-20',21:'ruins-21',22:'ruins-22',23:'ruins-23','3':'ditch','10':'mill-entry','11':'mill-grain','12':'mill-press','13':'mill-vault','14':'mill-storage','15':'mill','16':'woods-edge','17':'wolf-grove','18':'ruins-approach'};
 const testStart=Object.hasOwn(testRooms,testRoom)?testRooms[testRoom]:null;
+const testRuinsInterior=ruinsRoomNumber(testStart);
+let ruinsInterior=testRuinsInterior;
 let millEntry=testStart==='mill-entry', millGrain=testStart==='mill-grain';
 let millPress=testStart==='mill-press', millVault=testStart==='mill-vault';
 let millStorage=testStart==='mill-storage';
@@ -255,8 +269,16 @@ let millGateOpen=millGrain || millPress || millVault || millStorage || sluiceRoo
 let inMill=millEntry || millGrain || millPress || millVault || millStorage || sluiceRoom;
 const startInDitch=testStart==='ditch';
 let millApproach=testStart==='mill-approach';
-let yard=startInDitch || millApproach || inMill, gateOpen=yard, changingRoom=false, rainSource;
+let woods=testWoods, wolfGrove=testRoom==='17', ruinsApproach=testRoom==='18';
+let yard=startInDitch || millApproach || inMill || woods || wolfGrove || ruinsApproach || Boolean(ruinsInterior), gateOpen=yard, changingRoom=false, rainSource;
 const roomFade=document.querySelector('#room-fade');
+let sluiceShortcutOpened=false, serviceGateOpen=false, shortcutRockMovedAt=-Infinity;
+const shortcutRockSlideTime=660;
+let westTrailRevealed=false, westGateOpen=false, stoneDaggerFound=false;
+const westScent={startedAt:-Infinity,fade:null}, woodsScent={startedAt:-Infinity,fade:null};
+let woodsTrailRevealed=false;
+let scentPromptEnteredAt=null;
+const westScentHold=2800, westScentFade=1050, scentDismissDuration=260;
 let nextWolfGrowl=0, wolfGrowl=null;
 let inShop=false, shopStep=null, shopChoice=0;
 let ditch=startInDitch, plankTaken=millApproach || inMill, bridgeBuilt=plankTaken, wolfLine=-1;
@@ -289,6 +311,10 @@ function changeRoad(destination){
  setTimeout(()=>{
   enterRoad(destination);
   syncOutdoorAudio();
+  if(destination==='mill-approach-shortcut' && performance.now()-shortcutRockMovedAt<shortcutRockSlideTime){
+   playAttackSound('crack');
+   playPickupSound([277,370,554],.035,.15);
+  }
   draw(eyesClosed);
   roomFade.classList.remove('dark');
   setTimeout(()=>{changingRoom=false;},160);
@@ -296,6 +322,12 @@ function changeRoad(destination){
  },170);
 }
 function enterRoad(destination){
+ pounceStrike=null;
+ const previousInterior=ruinsInterior;
+ ruinsInterior=ruinsRoomNumber(destination);
+ woods=destination==='woods-edge' || destination==='woods-from-grove' || destination==='woods-from-ruins';
+ ruinsApproach=destination==='ruins-approach' || destination==='ruins-approach-from-inside';
+ wolfGrove=destination==='wolf-grove';
  ditch=destination==='ditch-north' || destination==='ditch-south';
  inShop=destination==='mill-shop';
  const fromGrain=destination==='mill-entry-from-grain';
@@ -308,7 +340,8 @@ function enterRoad(destination){
  const fromSluice=destination==='mill-storage-from-sluice';
  millVault=destination==='mill-vault';
  millStorage=destination==='mill-storage' || fromSluice;
- sluiceRoom=destination==='mill';
+ const fromTownShortcut=destination==='mill-from-town';
+ sluiceRoom=destination==='mill' || fromTownShortcut;
  inMill=millEntry || millGrain || millPress || millVault || millStorage || sluiceRoom;
  raftY=raftStartY;
  sluiceLastFrame=null;
@@ -320,12 +353,33 @@ function enterRoad(destination){
  const leavingMill=destination==='mill-exit';
  yard=destination!=='inn';
  const leavingShop=destination==='shop-exit';
- millApproach=destination==='mill-approach' || leavingShop || leavingMill;
+ const fromSluiceShortcut=destination==='mill-approach-shortcut';
+ const fromWoods=destination==='mill-approach-from-woods';
+ millApproach=destination==='mill-approach' || leavingShop || leavingMill || fromSluiceShortcut || fromWoods;
+ if(fromSluiceShortcut && !sluiceShortcutOpened){
+  sluiceShortcutOpened=true;
+  shortcutRockMovedAt=performance.now();
+ }
  const arrivingFromNorth=destination==='ditch-north' || millApproach;
  playerX=fromSluice?80:millStorage?23:fromStorage?137:fromPress?124:millVault || millPress || millGrain || fromGrain?80:inMill?21:leavingMill?141:leavingShop?119:80;
  playerY=!yard?105:destination==='yard-checkpoint'?55:fromSluice?108:millStorage || fromStorage?116:fromPress || fromVault?55:millVault || millPress || millGrain?127:fromGrain?58:inMill?102:leavingMill?99:inShop?128:leavingShop?84:arrivingFromNorth?51:132;
  standingHeight=0;
  facing=destination==='yard-checkpoint'?'ArrowDown':fromStorage?'ArrowLeft':fromSluice?'ArrowDown':fromGrain || fromPress || fromVault?'ArrowDown':millGrain || millPress || millVault?'ArrowUp':inMill?'ArrowRight':leavingMill?'ArrowLeft':arrivingFromNorth?'ArrowDown':'ArrowUp';
+ if(woods){
+  playerX=140;playerY=99;facing='ArrowLeft';
+  resetWoodsBoarPosition();
+ }
+ if(destination==='woods-from-grove'){playerX=18;playerY=108;facing='ArrowRight';}
+ if(destination==='woods-from-ruins'){playerX=80;playerY=32;facing='ArrowDown';}
+ if(ruinsApproach){playerX=80;playerY=destination==='ruins-approach-from-inside'?45:130;facing=playerY===45?'ArrowDown':'ArrowUp';}
+ if(ruinsInterior){
+  playerX=80;playerY=previousInterior>ruinsInterior?54:130;facing=playerY===54?'ArrowDown':'ArrowUp';
+  resetRuinsVisit();
+ }
+ if(wolfGrove){playerX=141;playerY=108;facing='ArrowLeft';}
+ if(fromWoods){playerX=26;playerY=99;facing='ArrowRight';}
+ if(fromSluiceShortcut){playerX=128;playerY=129;facing='ArrowUp';}
+ if(fromTownShortcut){playerX=129;playerY=130;facing='ArrowDown';}
 }
 let ghostStarted=null;
 let wolfFinalWordsPending=false;
@@ -404,11 +458,60 @@ const grassTiles=Array.from({length:20},(_,index)=>{
  return {id:'grass-'+index,x,y,width:8,bottom:y+7,height:8,hp:1,hasGem:grassGemTiles.has(index),gemAvailable:false,cutAt:null};
 });
 const villageGate={x:13,y:90,width:7,bottom:108,height:40};
-const approachObjects=[
- villageGate,
- {x:98,y:48,width:43,bottom:77,height:40},
- {x:116,y:109,width:27,bottom:121,height:40}
+const westLatch={x:134,y:125};
+const westScentTrail=[[27,99],[34,100],[41,98],[48,100],[55,99],[62,101],[69,99],
+ [76,100],[83,98],[90,100],[97,99],[104,101],[111,99],[118,100],[125,103],
+ [129,109],[128,115],[131,120],[134,124]];
+const woodsCanopy=[[-6,-31,12,5],[-11,-27,22,7],[-14,-20,28,6],[-11,-15,22,3]];
+const woodsTrees=[
+ [14,49],[55,47],[124,56],
+ [39,79],[57,72],[144,77],
+ [69,92],[14,122],[63,128],[143,128]
+].map(([x,bottom])=>({x:x-3,y:bottom-5,width:6,bottom,height:32}));
+const gemTree=woodsTrees.find(tree=>tree.x===66 && tree.bottom===92);
+const treeGemDrops=[[-9,8],[8,9],[13,2],[-13,1],[1,14]]
+ .map(([dx,dy])=>({x:gemTree.x+3+dx,y:gemTree.bottom+dy,available:false}));
+gemTree.id='woods-gem-tree';
+gemTree.hp=treeGemDrops.length;
+gemTree.hitAt=-Infinity;
+const woodsCache={x:22,y:105};
+const grovePath={top:102,bottom:114};
+const groveDen={x:13,y:45,width:42,bottom:78,height:36};
+const groveWolves=[[18,88],[81,79],[75,100],[13,122],[88,135],[112,87],[111,121]];
+const groveSurvivor={x:48,y:130};
+const groveLines=['Luca, you returned.','You must find the soul of the wolf…'];
+let groveLine=-1, groveWolfDead=false, groveCollapseAt=null;
+const groveTrees=[[109,78],[14,115],[123,138]]
+ .map(([x,bottom])=>({x:x-3,y:bottom-5,width:6,bottom,height:32}));
+const woodsNorthTrail={left:72,right:88,walkTop:24};
+const ruinsApproachTrees=[{x:25,bottom:127},{x:126,bottom:127}];
+const ruinsWolfStart=48;
+const ruinsWolf={x:ruinsWolfStart,y:77,width:11,bottom:89,height:40};
+const ruinsManStart=100;
+const ruinsMan={x:ruinsManStart,y:77,width:11,bottom:89,height:40};
+const ruinsWolfCenter=65, ruinsManCenter=84;
+let ruinsOpen=false, ruinsOpenedAt=-Infinity;
+const woodsBoarHp=22;
+const woodsBoarHome={x:72,y:71,bottom:80};
+const woodsBoarPatrol={left:74,right:96};
+const woodsBoarRightLimit=116;
+const woodsBoar={id:'woods-boar',...woodsBoarHome,width:16,height:8,hp:woodsBoarHp,
+ phase:'patrol',patrolDirection:1,dx:1,dy:0,until:0,chargeReadyAt:0,defeatedAt:-Infinity,hitUntil:0};
+let woodsBoarFrame=null, woodsPotion=null;
+const woodsScentTrail=[[90,105],[80,107],[70,110],[60,112],[50,115],[39,114],[31,110],[25,106]];
+const woodsTrailStart=woodsScentTrail[0];
+const woodsSigns=[
+ {x:93,y:59,message:'Old trail ↑',direction:'up'},
+ {x:132,y:89,message:'Town →',direction:'right'}
 ];
+const serviceGate={x:116,y:111,width:27,bottom:121,height:40};
+const serviceRails=[
+ {x:111,y:110,width:4,bottom:139,height:40},
+ {x:144,y:110,width:4,bottom:139,height:40}
+];
+const shortcutRock={x:121,y:130,width:17,bottom:138,height:40};
+const shiftedRock={...shortcutRock,x:139};
+const approachObjects=[{x:98,y:48,width:43,bottom:77,height:40},...serviceRails];
 const shopObjects=[
  {x:65,y:77,width:62,bottom:88,height:30},
  {x:112,y:88,width:15,bottom:102,height:30},
@@ -420,23 +523,52 @@ const shopOptions=document.querySelector('#shop-options');
 const shopStock=document.querySelector('#shop-stock');
 const potion={id:'potion',label:'Potion',description:'Restores up to one life star.'};
 const grassBow={id:'grass-bow',label:'Grass Bow',cost:10,description:'Fires arrows up to '+grassBowRange+' pixels.',slot:'weapon',weaponClass:'bow',strBonus:1};
+const stoneDagger={id:'stone-dagger',label:'Stone Dagger',value:1,cost:20,slot:'weapon',weaponClass:'stone-dagger',strBonus:5,
+ description:'Sends a short swipe wave at full health.'};
+const stoneDaggerEngraving='Carved In The Land of The Wolves. May They Protect This World Forever';
 const shopItems=[
  {...potion,cost:3},
  grassBow,
  {id:'grass-shield',label:'Grass Shield',cost:10,description:'A shield woven from tough grass.',slot:'shield',defBonus:1}
 ];
-const shopIcons={potion:'potion','emperor-note':'note','grass-bow':'bow','grass-shield':'shield'};
+const shopIcons={potion:'potion','emperor-note':'note','grass-bow':'bow','grass-shield':'shield','stone-dagger':'stone-dagger',
+ ...Object.fromEntries(ruinsGear.map(item=>[item.id,item.id]))};
+const shopResalePrices=new Map([
+ ...shopItems.map(({id,cost})=>[id,cost]),
+ ['dagger',5],[stoneDagger.id,stoneDagger.cost],['straw-armor',8],['straw-helmet',10],['emperor-note',3],['wooden-plank',3]
+]);
+const resalePrice=price=>Math.floor(price/2);
 let stockCursor=0;
+function getShopStock(){
+ if(shopStep!=='sell') return shopItems;
+ return Array.from(inventory,([id,item])=>({...item,id})).filter(item=>shopResalePrices.has(item.id));
+}
 function renderShopStock(message=''){
- shopLine.textContent=message || ('Buy · '+gems+' gems');
+ const selling=shopStep==='sell';
+ const stock=getShopStock();
+ shopLine.textContent=message || (selling && !stock.length?'You have nothing to sell.':(selling?'Sell':'Buy')+' · '+gems+' gems');
  shopStock.replaceChildren();
- shopItems.forEach((item,index)=>{
+ stock.forEach((item,index)=>{
   const row=document.createElement('li');
   row.classList.toggle('selected',index===stockCursor);
   const name=document.createElement('span'),price=document.createElement('span');
-  name.textContent=item.label;price.textContent=item.cost+' gems';
+  name.textContent=item.label+(selling && item.value>1?' ×'+item.value:'');
+  price.textContent=(selling?resalePrice(shopResalePrices.get(item.id)):item.cost)+' gems';
   row.append(name,price);shopStock.append(row);
  });
+}
+function sellShopItem(){
+ const item=getShopStock()[stockCursor];
+ if(!item) return;
+ const proceeds=resalePrice(shopResalePrices.get(item.id));
+ gems+=proceeds;
+ document.dispatchEvent(new CustomEvent('game:inventory-change',{
+  detail:{id:item.id,label:item.label,value:item.value>1?item.value-1:null}
+ }));
+ document.querySelector('#inventory-gems').textContent=gems;
+ stockCursor=Math.max(0,Math.min(stockCursor,getShopStock().length-1));
+ unlockEffects();playPickupSound([440,660]);
+ renderShopStock(item.label+' sold · +'+proceeds+' '+(proceeds===1?'gem':'gems'));
 }
 function buyShopItem(){
  const item=shopItems[stockCursor];
@@ -463,13 +595,12 @@ function showShopDialogue(step){
  shopStep=step;
  shopDialogue.hidden=step===null;
  shopOptions.hidden=step!=='choice';
- shopStock.hidden=step!=='buy';
- if(step==='buy'){stockCursor=0;renderShopStock();renderShopControls();return;}
+ shopStock.hidden=step!=='buy' && step!=='sell';
+ if(step==='buy' || step==='sell'){stockCursor=0;renderShopStock();renderShopControls();return;}
  if(step===null) return;
  const lines={
   hello:'Shopkeeper: Hello!',
-  choice:'Shopkeeper: What can I get for you?',
-  sell:'Shopkeeper: I’m not buying anything today.'
+  choice:'Shopkeeper: What can I get for you?'
  };
  shopLine.textContent=lines[step];
  renderShopControls();
@@ -479,14 +610,18 @@ function showShopDialogue(step){
 }
 function renderShopControls(){
  const a=actionKey('A'),b=actionKey('B');
- shopControls.textContent=shopStep==='buy'?'↑ / ↓ · '+a+' Buy · '+b+' Back':
+ shopControls.textContent=shopStep==='buy'||shopStep==='sell'?'↑ / ↓ · '+a+(shopStep==='sell'?' Sell':' Buy')+' · '+b+' Back':
   shopStep==='choice'?'← / → · '+a+' Select · '+b+' Back':
   shopStep==='hello'?a+' · Continue':a+' / '+b+' · Back';
 }
 function approachLandmark(){
  if(!millApproach || jump) return '';
- if(playerX<=30 && Math.abs(playerY-99)<=9) return 'Village Gate';
- if(playerX>=114 && playerY>=122 && playerY<=132) return 'Service Gate';
+ const canTraceLatch=scentUnlocked && sluiceShortcutOpened;
+ if(canTraceLatch && !westGateOpen && westTrailRevealed && !standingHeight &&
+  Math.abs(playerX-westLatch.x)<=6 && Math.abs(playerY-westLatch.y)<=5) return 'Hidden Gate Release';
+ if(!westGateOpen && playerX>=22 && playerX<=31 && Math.abs(playerY-99)<=8)
+  return canTraceLatch?'Use Scent at Gate':'Village Gate';
+ if(!serviceGateOpen && playerX>=117 && playerX<=141 && playerY>=104 && playerY<=131) return 'Service Gate';
  return '';
 }
 const sluiceChannel={left:74,right:86,top:51,bottom:138};
@@ -745,7 +880,8 @@ function hurtInMill(amount=enemyHitHp){
   cancelAnimationFrame(jumpFrame);
   jump=null;
   restoreFullHp();
-  changeRoad(sluiceRoom?'mill':millVault?'mill-vault':millPress?'mill-press':'mill-entry');
+  if(woods)woodsBoar.hp=woodsBoarHp;
+  changeRoad(woods?'woods-edge':sluiceRoom?'mill':millVault?'mill-vault':millPress?'mill-press':'mill-entry');
  }
 }
 function updateMillSpiders(){
@@ -796,9 +932,9 @@ const millDrop={potion:null,vaultPotion:null,note:null};
 
 const vaultGem={x:0,y:0,value:5,available:false};
 let potionDropped=false, readingNote=null;
-function nearbyMillDrop(){
+function nearbyRoomDrop(){
  if(jump || standingHeight || changingRoom) return null;
- const drop=millEntry?millDrop.potion:millVault?millDrop.vaultPotion:millGrain?millDrop.note:null;
+ const drop=woods?woodsPotion:millEntry?millDrop.potion:millVault?millDrop.vaultPotion:millGrain?millDrop.note:null;
  return drop && Math.abs(playerX-drop.x)<=13 && Math.abs(playerY-drop.y)<=10?drop:null;
 }
 function readEmperorNote(source){
@@ -806,7 +942,12 @@ function readEmperorNote(source){
  wolfDialogue.setAttribute('aria-label','Note');
  showDiscovery(emperorNoteText);
 }
-function closeEmperorNote(){
+function readStoneDagger(){
+ readingNote='engraving';
+ wolfDialogue.setAttribute('aria-label','Stone Dagger engraving');
+ showDiscovery('“'+stoneDaggerEngraving+'”');
+}
+function closeReading(){
  const found=readingNote==='floor';
  readingNote=null;
  wolfDialogue.setAttribute('aria-label','Final words');
@@ -893,6 +1034,10 @@ function breakStorageCrate(crate){
  }
 }
 function roomObjects(){
+ if(ruinsInterior)return ruinsInteriorObjects();
+ if(woods) return woodsTrees;
+ if(wolfGrove) return [groveDen,...groveTrees];
+ if(ruinsApproach)return [ruinsWolf,ruinsMan];
  if(millStorage) return millStorageObjects;
  if(millVault) return vaultUnlocked?[...vaultWalls,vaultChest]:[...vaultWalls,vaultGrate,vaultChest];
  if(millPress) return pressWalls;
@@ -900,13 +1045,16 @@ function roomObjects(){
  if(millEntry) return millEntryObjects;
  if(sluiceRoom) return sluiceFixtures;
  if(inShop) return shopObjects;
- if(millApproach) return approachObjects;
+ if(millApproach){
+  const moved=sluiceShortcutOpened && performance.now()-shortcutRockMovedAt>=shortcutRockSlideTime;
+  return [...approachObjects,...(westGateOpen?[]:[villageGate]),...(serviceGateOpen?[]:[serviceGate]),moved?shiftedRock:shortcutRock];
+ }
  if(ditch) return [cart];
  if(!yard) return furniture;
  return gateOpen?yardFence:[gate,southGate,...yardFence];
 }
 function gateInReach(){
- return yard && !ditch && !gateOpen && !jump &&
+ return yard && !woods && !ditch && !gateOpen && !jump &&
   Math.abs(playerX-gateSwitch.x)<=8 && Math.abs(playerY-gateSwitch.y)<=7;
 }
 function changeRoom(){
@@ -938,7 +1086,7 @@ function daggerInReach(){
   Math.abs(playerX-dagger.x)<=8 && Math.abs(playerY-dagger.y)<=6;
 }
 function nearbyFallenWolf(){
- if(!yard || ditch || millApproach || inShop || inMill || jump) return -1;
+ if(!yard || woods || wolfGrove || ruinsApproach || ruinsInterior || ditch || millApproach || inShop || inMill || jump) return -1;
  return fallenWolves.findIndex(([x,y])=>Math.abs(playerX-(x+7))<=12 && Math.abs(playerY-y)<=8);
 }
 function nearCartArmor(){
@@ -979,7 +1127,7 @@ function refreshInfo(){
  if(washoutInReach() && riverThought.readyAt===null && screen==='play' && !changingRoom && !discoveryOpen){
   riverThought.readyAt=now;
  }
- const thought=ditch?(bridgeBuilt?null:riverThought):yard?(gateOpen?null:yardThought):innThought;
+ const thought=woods && !stoneDaggerFound?woodsCallThought:ditch?(bridgeBuilt?null:riverThought):yard?(gateOpen?null:yardThought):innThought;
  const active=thought && !changingRoom && !discoveryOpen && screen==='play';
  if(active && thought.readyAt!==null && thought.shownAt===null && now>=thought.readyAt){
   thought.shownAt=now;
@@ -988,10 +1136,18 @@ function refreshInfo(){
  travelerThought.hidden=!active || thought.shownAt===null || now-thought.shownAt>=4000;
  const body=nearbyFallenWolf();
  if(body!==dismissedWolf) dismissedWolf=-1;
- const landmark=millAction() || approachLandmark();
- const drop=nearbyMillDrop() || nearbyBossPotion();
- const a=' · '+actionKey('A');
- const message=(raisedItem?raisedItem.message+a:'') || infoMessage || (drop?drop.item.label+a:'') || (shopkeeperInReach()?'Talk'+a:'') || (landmark?landmark+a:'') || (!discoveryOpen && body>=0 && body!==dismissedWolf?'Dead Werewolf':'') || (gateInReach()?'Gate switch'+a:daggerInReach()?'Dagger'+a:plankInReach()?'Wooden Plank'+a:washoutInReach() && plankTaken && inventory.has(woodenPlank.id)?'Lay Wooden Plank'+a:nearCartArmor()?'Search'+a:chestInReach()?'Storage Chest'+a:'');
+ const landmark=millAction() || approachLandmark() || woodsLandmark() || groveLandmark() || ruinsInteraction()?.label;
+ const sign=nearbyWoodsSign();
+ const walkingShortcut=millApproach && sluiceShortcutOpened && playerY>=129 && playerX>=122 && playerX<=133 &&
+  now-shortcutRockMovedAt>=shortcutRockSlideTime;
+ const drop=nearbyRoomDrop() || nearbyBossPotion();
+ const roomHint=ruinsRoomHint();
+ const message=raisedItem?.message || infoMessage || drop?.item.label || (shopkeeperInReach()?'Talk':'') ||
+  landmark || sign?.message || roomHint || (walkingShortcut?'Sluice Passage':'') ||
+  (!discoveryOpen && body>=0 && body!==dismissedWolf?'Dead Werewolf':'') ||
+  (gateInReach()?'Gate switch':daggerInReach()?'Dagger':plankInReach()?'Wooden Plank':
+   washoutInReach() && plankTaken && inventory.has(woodenPlank.id)?'Lay Wooden Plank':
+   nearCartArmor()?'Search':chestInReach()?'Storage Chest':'');
  infoBox.textContent=message;
  infoBox.hidden=(!raisedItem && shopStep!==null) || discoveryOpen || !message || screen!=='play';
 }
@@ -1045,6 +1201,15 @@ function drawLife(){
  }
 }
 function collectGem(){
+ if(woods && (jump?.height??standingHeight)===0){
+  let value=0;
+  for(const gem of treeGemDrops){
+   if(!gem.available || Math.abs(playerX-gem.x)>5 || Math.abs(playerY-gem.y)>5) continue;
+   gem.available=false;
+   value++;
+  }
+  if(value){awardGems(value);showInfo(value===1?'+1 Gem':'+'+value+' Gems');}
+ }
  if(millApproach && (jump?.height??standingHeight)===0){
   const tile=grassTiles.find(tile=>tile.gemAvailable &&
    Math.abs(playerX-(tile.x+4))<=4 && Math.abs(playerY-(tile.y+4))<=4);
@@ -1121,8 +1286,9 @@ let debrisElapsed=0, debrisFrame=0, debrisPrevious=null;
 const scatterTime=280, restTime=1000, flashTime=400;
 const debrisDuration=scatterTime+restTime+flashTime;
 let punching=false, punchTimer, jabTimer, jabFrame=0;
-const weaponAttacks={dagger:{windup:65,recovery:125,reach:13},bow:{windup:170,recovery:230,reach:grassBowRange}};
-let arrowShot=null, visualFrame=null;
+const weaponAttacks={dagger:{windup:65,recovery:125,reach:13},'stone-dagger':{windup:105,recovery:235,reach:13},
+ bow:{windup:170,recovery:230,reach:grassBowRange}};
+let arrowShot=null, stoneWave=null, stoneSwipeAt=0, visualFrame=null;
 const damageableCharacters=new Map();
 // Characters register their floor bounds, height, and hit points here.
 document.addEventListener('game:damageable-register',event=>{
@@ -1131,31 +1297,17 @@ document.addEventListener('game:damageable-register',event=>{
   damageableCharacters.set(target.id,{...target});
  }
 });
+const equipment=new Map();
 let equippedItem=null;
-const jumpDuration=1050, jumpPeak=16;
+const jumpDuration=1050, jumpPeak=16, pounceStrikeDuration=180;
+let pounceStrike=null;
 let standingHeight=0;
 let jump=null, jumpFrame=0, lastJumpFrame=null;
 let playerX=millStorage?23:inMill && !millGrain && !millPress && !millVault?21:80, playerY=millStorage?116:millGrain || millPress || millVault?127:inMill?102:yard?51:105, eyesClosed=false;
 let facing=millGrain || millPress || millVault?"ArrowUp":inMill?"ArrowRight":"ArrowDown";
 let stride=0, steps=0, idleTimer;
 let fireFrame=0, fireTimer;
-function draw(blink){
- ctx.save();
- if(sluiceRoom && boss.phase==='intro' && boss.elapsed<475){
-  rect(0,0,160,144,0);
-  ctx.translate(Math.round(Math.sin(boss.elapsed*.13)*3),Math.round(Math.sin(boss.elapsed*.19)*2));
- }
- if(millStorage) drawMillStorage();
- else if(millVault) drawVaultRoom();
- else if(millPress) drawPressRoom();
- else if(millGrain) drawGrainRoom();
- else if(millEntry) drawMillEntry();
- else if(inMill) drawMill();
- else if(inShop) drawMillShop(blink);
- else if(millApproach) drawMillApproach();
- else if(ditch) drawDitch();
- else if(yard) drawYard();
- else{
+function drawInnRoom(memory=false){
  rect(0,0,160,144,0);
  rect(5,5,150,53,2);
  for(let y=9;y<47;y+=8){rect(5,y,150,1,1);for(let x=10+(y%16);x<154;x+=16)rect(x,y,1,8,1)}
@@ -1177,7 +1329,7 @@ function draw(blink){
    rect(x+6,70,4,5,0);rect(x+7,70,2,1,3);rect(x+17,69,3,5,0);rect(x+18,70,1,2,3);
    rect(x+7,98,12,10,0);rect(x+8,99,10,6,2);
  }
- if(!crate.broken){
+ if(memory || !crate.broken){
   const {x,seatY:y}=crate;
   rect(x+1,y-2,8,1,0);
   rect(x,y-1,10,3,0);
@@ -1188,25 +1340,86 @@ function draw(blink){
   rect(x+7,y+3,2,7,1);
   for(let i=0;i<5;i++) rect(x+1+i,y+8-i,1,2,1);
  }
- if(crate.broken && debrisElapsed<debrisDuration) drawDebris();
- drawGroundGem(crateGem);
+ if(!memory && crate.broken && debrisElapsed<debrisDuration) drawDebris();
+ if(!memory)drawGroundGem(crateGem);
  drawChest();
- drawBloodPool();
- if(dagger.available) drawDagger(dagger.x,dagger.y,true);
- rect(68,134,24,6,0);rect(70,134,20,3,1);rect(73,136,14,2,2);
+ if(!memory){
+  drawBloodPool();
+  if(dagger.available) drawDagger(dagger.x,dagger.y,true);
  }
+ rect(68,134,24,6,0);rect(70,134,20,3,1);rect(73,136,14,2,2);
+}
+function drawGuardMemoryShade(memory){
+ if(!memory || memory.shade<=0) return;
+ ctx.save();
+ ctx.globalAlpha=memory.shade;
+ rect(0,0,160,144,0);
+ ctx.restore();
+}
+function draw(blink){
+ if(ruinsVista){
+  drawStrongholdVista();
+  refreshInfo();
+  return;
+ }
+ const guardMemory=guardMemoryFrame(performance.now());
+ if(guardMemory?.inn){
+  drawInnFlashback(guardMemory.elapsed);
+  drawGuardMemoryShade(guardMemory);
+  refreshInfo();
+  if(screen==='play' && visualFrame===null) visualFrame=requestAnimationFrame(refreshAnimatedRoom);
+  return;
+ }
+ ctx.save();
+ if(sluiceRoom && boss.phase==='intro' && boss.elapsed<475){
+  rect(0,0,160,144,0);
+  ctx.translate(Math.round(Math.sin(boss.elapsed*.13)*3),Math.round(Math.sin(boss.elapsed*.19)*2));
+ }
+ if(millStorage) drawMillStorage();
+ else if(millVault) drawVaultRoom();
+ else if(millPress) drawPressRoom();
+ else if(millGrain) drawGrainRoom();
+ else if(millEntry) drawMillEntry();
+ else if(inMill) drawMill();
+ else if(inShop) drawMillShop(blink);
+ else if(millApproach) drawMillApproach();
+ else if(woods) drawWoods();
+ else if(wolfGrove) drawGrove();
+ else if(ruinsApproach)drawRuinsApproach();
+ else if(ruinsInterior)drawRuinsInterior();
+ else if(ditch) drawDitch();
+ else if(yard) drawYard();
+ else drawInnRoom();
  if(sluiceRoom){
   drawMillSpiders(bossSpiders);
   for(const drop of bossPotions) drawMillDrop(drop);
   drawSluiceBoss();
   drawChestBlast();
  }
- if(millVault) drawVaultActors(blink);
+ if(woods)drawWoodsActors(blink);
+ else if(wolfGrove)drawGroveActors(blink);
+ else if(ruinsApproach)drawRuinsActors(blink);
+ else if(ruinsInterior)drawRuinsActorsInDepth(blink);
+ else if(millVault) drawVaultActors(blink);
  else if(drowningAt!==null) drawDrowningTraveler(blink);
  else drawTraveler(blink);
  if(sluiceRoom && playerY<=sluiceChest.bottom) drawSluiceChest();
  if(arrowShot) drawFlyingArrow();
+ if(stoneWave) drawStoneWave();
+ if(pounceStrike)drawPounceStrike();
  if(millPress && playerY<=100) drawPressForeground();
+ const now=performance.now();
+ const scentShade=woods?woodsScentShade(now):westScentShade(now);
+ const scentPrompt=canUseScentHere();
+ if(ruinsInterior===20 || ruinsInterior===22)drawRuinsScent();
+ if(scentShade>0){
+  if(woods)drawWoodsScentHighlight(scentShade);
+  else drawWestScentHighlight(scentShade);
+ }
+ if(scentPrompt){
+  scentPromptEnteredAt??=now;
+  drawScentPrompt(now-scentPromptEnteredAt);
+ }else scentPromptEnteredAt=null;
  ctx.restore();
  drawLife();
  drawMillRoomTitle();
@@ -1221,8 +1434,13 @@ function draw(blink){
  ctx.fillStyle=colors[3];
  ctx.fillText(count,left,9);
  ctx.restore();
+ drawGuardMemoryShade(guardMemory);
  refreshInfo();
- if(screen==='play' && (ditch || millPress || sluiceRoom || arrowShot || performance.now()<damageFlashUntil) && visualFrame===null){
+ if(screen==='play' && (ditch || millPress || sluiceRoom || arrowShot || stoneWave || pounceStrike || (jabFrame && equippedItem===stoneDagger.id) || scentShade>0 || scentPrompt || ruinsApproach || ruinsInterior ||
+  (woods && woodsCallThought.shownAt!==null && now-woodsCallThought.shownAt<4000) ||
+  (wolfGrove && (!groveWolfDead || groveCollapseAt!==null && now-groveCollapseAt<ghostDuration+350)) ||
+  woods && (woodsBoar.hp>0 || performance.now()-woodsBoar.defeatedAt<670 || performance.now()-gemTree.hitAt<380) || performance.now()<damageFlashUntil ||
+  (millApproach && performance.now()-shortcutRockMovedAt<shortcutRockSlideTime)) && visualFrame===null){
   visualFrame=requestAnimationFrame(refreshAnimatedRoom);
  }
 }
@@ -1238,9 +1456,15 @@ function drawScentSymbol(target,x,y){
 }
 function drawRaisedItem(id){
  if(id==='scent') drawScentSymbol(ctx,84,73);
+ else if(id===glyphFragment.id) drawGlyphFragment(89,81);
+ else if(id==='pounce') drawRuinsPaw(86,76,3);
+ else if(ruinsGear.some(item=>item.id===id)) drawRuinsGear(ruinsGear.find(item=>item.id===id),89,78);
  else if(id===strawArmor.id) drawStrawArmor(ctx,84,77);
  else if(id===strawHelmet.id) drawStrawHelmet(ctx,81,72);
  else if(id==='dagger') drawDagger(88,85,false);
+ else if(id===stoneDagger.id){
+  ctx.save();ctx.translate(82,81);ctx.rotate(-.70);drawStoneBlade();ctx.restore();
+ }
  else if(id===potion.id || id===emperorNote.id) drawMillDrop({x:88,y:83,item:id===potion.id?potion:emperorNote});
  else if(id===woodenPlank.id){
   for(let i=0;i<11;i++) rect(83+i,83-Math.floor(i/2),1,4,i%3===0?2:3);
@@ -1267,8 +1491,9 @@ function drawTraveler(blink){
  if(punching && facing==='ArrowUp') drawRearPunch();
  ctx.save();
  ctx.translate(playerX-80,playerY-105);
+ const stoneBody=equipment.get('body')===stoneArmor.id;
  if(raisedItem){
-  drawFront(blink);
+  drawFront(blink,stoneBody);
   drawFeet();
   drawRaisedItem(raisedItem.id);
  }else if(facing==='ArrowLeft' || facing==='ArrowRight'){
@@ -1276,25 +1501,39 @@ function drawTraveler(blink){
    ctx.translate(160,0);
    ctx.scale(-1,1);
   }
-  drawProfile(blink);
+  drawProfile(blink,stoneBody);
  }else{
-  if(facing==='ArrowUp') drawBack();
-  else drawFront(blink);
+  if(facing==='ArrowUp') drawBack(blink,woods && performance.now()<woodsLookBackUntil,stoneBody);
+  else drawFront(blink,stoneBody);
   drawFeet();
  }
  if(armorEquipped) drawStrawArmor(ctx,76,94);
  ctx.restore();
  if(helmetEquipped) drawStrawHelmet(ctx,playerX-7,playerY-23,facing);
+ const gearFacing=raisedItem?'ArrowDown':facing;
+ if(equipment.get('head')===stoneHelm.id) drawEquippedStoneHelm(playerX,playerY,gearFacing);
+ if(equipment.get('shield')===stoneShield.id && !raisedItem) drawEquippedStoneShield(playerX,playerY,gearFacing);
  if(punching && (facing==='ArrowLeft' || facing==='ArrowRight')) drawPunch();
- if(jabFrame && equippedItem!=='grass-bow' && facing!=='ArrowUp') drawJab();
+ if(jabFrame && equippedItem!=='grass-bow' && (facing!=='ArrowUp' || equippedItem===stoneDagger.id)) drawJab();
  if(jabFrame && equippedItem==='grass-bow') drawBow();
+ if(jump?.dive && jump.diveWeapon && jump.direction){
+  const [dx,dy]=directions.get(jump.direction);
+  ctx.save();
+  ctx.translate(playerX+dx*7,playerY-8+dy*4);
+  ctx.rotate(Math.atan2(dy,dx)+.66);
+  drawPounceWeapon(jump.diveWeapon);
+  ctx.restore();
+ }
  ctx.restore();
 }
 function refreshAnimatedRoom(now){
  visualFrame=null;
  if(screen!=='play') return;
  if(!raisedItem && sluiceRoom) advanceSluice(now);
+ if(!raisedItem && woods) advanceWoodsBoar(now);
+ if(ruinsInterior) updateRuins(now);
  if(!raisedItem && arrowShot && !bossControlsLocked() && !changingRoom) advanceFlyingArrow(now);
+ if(!raisedItem && stoneWave && !bossControlsLocked() && !changingRoom) advanceStoneWave(now);
  draw(eyesClosed);
 }
 function drawDrowningTraveler(blink){
@@ -1311,8 +1550,8 @@ function drawDrowningTraveler(blink){
  rect(playerX-spread+2,playerY+3,spread*2-4,1,3);
 }
 function drawMillRoomTitle(){
- if(!inMill) return;
- const title=millEntry?'Mill Entrance':millGrain?'Grain Room':millPress?'Press Room':
+ if(!inMill && !woods && !wolfGrove && !ruinsApproach && !ruinsInterior) return;
+ const title=ruinsInterior?ruinsInteriorNames[ruinsInterior]:ruinsApproach?'Old Ruins Approach':wolfGrove?'Wolf Den Grove':woods?'Woods Entrance':millEntry?'Mill Entrance':millGrain?'Grain Room':millPress?'Press Room':
   millVault?'Mill Vault':millStorage?'Mill Storage':'Sluice Room';
  ctx.save();
  ctx.font='7px monospace';
@@ -1366,7 +1605,9 @@ function drawYard(){
  rect(gateSwitch.x-3,gateSwitch.y-3,7,6,0);
  rect(gateSwitch.x-2,gateSwitch.y-2,5,3,2);
  rect(gateSwitch.x+(gateOpen?1:-1),gateSwitch.y-5,2,5,3);
- for(const [x,y] of fallenWolves) drawFallenWolf(x,y);
+ for(const [index,[x,y]] of fallenWolves.entries()){
+  drawGroveWolf(x-2,y,0,false,index%2===1);
+ }
  if(!gemsFound) drawSparkle(53,97);
  const bloodTrail=[
   [79,48,3,5],[81,53,4,2],[83,57,2,4],[81,62,3,5],
@@ -1469,15 +1710,7 @@ function drawDitch(){
  if(ghostStarted!==null){
   const progress=(performance.now()-ghostStarted)/ghostDuration;
   if(progress<1){
-   const x=wolf.x+Math.round(3*Math.sin(progress*Math.PI));
-   const y=wolf.y-Math.round(32*progress);
-   ctx.save();
-   ctx.globalAlpha=Math.min(1,progress*12)*(1-progress);
-   rect(x,y-2,2,4,3);rect(x+6,y-3,2,5,3);
-   rect(x,y,8,6,3);rect(x-2,y+3,5,4,3);
-   rect(x+3,y+6,5,6,3);rect(x+5,y+12,2,3,3);
-   rect(x+1,y+2,1,1,0);rect(x+5,y+2,1,1,0);
-   ctx.restore();
+   drawWolfSpirit(wolf.x,progress,wolf.y);
   }
  }
  if(bridgeBuilt){
@@ -1898,6 +2131,538 @@ function drawSluiceBoss(){
   }
  }
 }
+function resetWoodsBoarPosition(){
+ Object.assign(woodsBoar,{...woodsBoarHome,patrolDirection:1,dx:1,dy:0,phase:'patrol',until:0});
+ woodsBoarFrame=null;
+}
+function advanceWoodsBoar(now){
+ const boar=woodsBoar;
+ const elapsed=woodsBoarFrame===null?0:Math.min(36,Math.max(0,now-woodsBoarFrame));
+ woodsBoarFrame=now;
+ if(!boar.hp || changingRoom || discoveryOpen) return;
+ const dx=playerX-(boar.x+boar.width/2),dy=playerY-boar.bottom+3;
+ if(boar.phase==='patrol'){
+  // Keep both the warning and the charge out of the town entrance.
+  if(playerX<woodsBoarRightLimit+boar.width/2+5 && now>=boar.chargeReadyAt && Math.hypot(dx,dy)<39){
+   const distance=Math.hypot(dx,dy);
+   boar.dx=distance?dx/distance:1;
+   boar.dy=distance?dy/distance:0;
+   boar.phase='windup';
+   boar.until=now+640;
+   playAttackSound('boarTell');
+  }else{
+   const center=boar.x+boar.width/2;
+   if(center>=woodsBoarPatrol.right)boar.patrolDirection=-1;
+   else if(center<=woodsBoarPatrol.left)boar.patrolDirection=1;
+   if(!advanceWoodsBoarStep(boar.patrolDirection*elapsed*.018,0))boar.patrolDirection*=-1;
+  }
+ }else if(boar.phase==='windup' && now>=boar.until){
+  boar.phase='charge';
+  boar.until=now+500;
+  boar.chargeReadyAt=now+5000;
+  playAttackSound('boarCharge');
+ }else if(boar.phase==='charge'){
+  const steps=Math.ceil(elapsed/9);
+  for(let step=0;step<steps;step++){
+   const stride=elapsed*.111/steps;
+   if(now>=boar.until || !advanceWoodsBoarStep(boar.dx*stride,boar.dy*stride)){
+    boar.phase='recover';
+    boar.until=now+930;
+    break;
+   }
+   if((jump?.height??standingHeight)>=boar.height || !objectAt(playerX,playerY,false,0,[boar]))continue;
+   boar.phase='recover';
+   boar.until=now+930;
+   hurtInMill();
+   break;
+  }
+ }else if(boar.phase==='recover' && now>=boar.until){
+  boar.phase='patrol';
+ }
+}
+function advanceWoodsBoarStep(dx,dy){
+ const boar=woodsBoar;
+ const x=boar.x+dx,y=boar.bottom+dy,center=x+boar.width/2;
+ if(center<62 || center>woodsBoarRightLimit || y<59 || y>118 || objectAt(center,y,false,0,woodsTrees)) return false;
+ boar.x=x;
+ boar.bottom=y;
+ boar.y=y-9;
+ return true;
+}
+function drawWoodsBoar(){
+ const b=woodsBoar,now=performance.now();
+ if(!b.hp){
+  const age=now-b.defeatedAt;
+  if(age>=670 || age>=290 && Math.floor((age-290)/80)%2) return;
+ }
+ const x=Math.round(b.x+b.width/2),y=Math.round(b.bottom);
+ const facing=b.phase==='patrol'?b.patrolDirection:Math.sign(b.dx)||1;
+ const windup=b.hp && b.phase==='windup';
+ const stride=b.phase==='charge'?Math.floor(now/62)%2:Math.floor(now/145)%2;
+ ctx.save();
+ ctx.translate(x,y);
+ ctx.scale(facing,1);
+ rect(-9,0,18,2,0);
+ if(!b.hp){
+  rect(-8,-4,16,4,1);rect(3,-3,6,3,0);rect(-5,-3,8,1,2);
+  ctx.restore();
+  return;
+ }
+ const lowered=windup || b.phase==='recover'?2:0;
+ for(const side of [-1,1]){
+  const kick=side*stride;
+  rect(side*4+kick,-5,2,6,0);
+  rect(side*4+kick,0,3,1,1);
+ }
+ rect(-10,-10+lowered,16,9-lowered,0);
+ rect(-8,-12+lowered,12,9,0);
+ rect(-8,-10+lowered,13,6,now<b.hitUntil?3:1);
+ rect(-6,-10+lowered,9,2,2);
+ rect(-9,-12+lowered,6,2,0);
+ rect(-8,-13+lowered,2,2,0);rect(-5,-14+lowered,2,3,0);
+ rect(2,-12+lowered,3,5,0);rect(3,-11+lowered,1,3,2);
+ rect(4,-8+lowered,7,6,0);rect(5,-7+lowered,5,3,1);
+ rect(6,-7+lowered,1,1,3);rect(9,-4+lowered,2,1,3);
+ rect(9,-5+lowered,1,2,3);
+ rect(-12,-8+lowered,3,1,0);rect(-12,-10+lowered,1,3,0);
+ if(windup){
+  const dust=2+Math.floor(now/100)%4;
+  rect(-8-dust,-1,2,1,2);rect(-12-dust,-3,1,1,3);
+  rect(5,-16,1,4,3);rect(5,-11,1,1,3);
+ }
+ if(b.phase==='charge'){
+  rect(-13,-7,3,1,2);rect(-16,-5,5,1,2);
+ }
+ ctx.restore();
+}
+function woodsLandmark(){
+ if(!woods || jump || standingHeight) return '';
+ if(scentUnlocked && !stoneDaggerFound){
+  if(Math.abs(playerX-woodsTrailStart[0])<=8 && Math.abs(playerY-woodsTrailStart[1])<=7) return 'Use Scent on Trail';
+  if(woodsTrailRevealed && Math.abs(playerX-woodsCache.x)<=8 && Math.abs(playerY-woodsCache.y)<=7) return 'Stone Dagger';
+ }
+ return '';
+}
+function nearbyWoodsSign(){
+ if(!woods || jump || standingHeight) return null;
+ return woodsSigns.find(({x,y})=>Math.abs(playerX-x)<=8 && Math.abs(playerY-y)<=7);
+}
+function canUseScentHere(){
+ if(screen!=='play' || changingRoom || discoveryOpen || raisedItem) return false;
+ return approachLandmark()==='Use Scent at Gate' || woodsLandmark()==='Use Scent on Trail' || canUseArchiveScent() || canUseVigilScent();
+}
+function drawScentPrompt(age){
+ const pop=Math.min(1,age/135);
+ const scale=.70+.30*pop+.10*Math.sin(age/105)*pop;
+ ctx.save();
+ ctx.translate(playerX,playerY-29-standingHeight);
+ ctx.scale(scale,scale);
+ rect(-2,-9,5,7,0);rect(-2,-1,5,4,0);
+ rect(-1,-8,3,5,3);rect(-1,0,3,2,3);
+ ctx.restore();
+}
+function drawScentTracks(tracks){
+ for(let i=0;i<tracks.length;i++){
+  const [x,y]=tracks[i],side=i%2?-1:1;
+  rect(x,y,2,2,3);rect(x+side,y-2,1,1,3);
+ }
+}
+function startScentHighlight(scent,now){
+ scent.startedAt=now;
+ scent.fade=null;
+}
+function scentShadeAt(now,{startedAt,fade}){
+ const age=now-startedAt;
+ const automaticShade=.67*Math.max(0,Math.min(1,(westScentHold+westScentFade-age)/westScentFade));
+ if(!fade) return automaticShade;
+ const remaining=Math.max(0,1-(now-fade.at)/scentDismissDuration);
+ return Math.min(automaticShade,fade.shade*remaining);
+}
+function westScentShade(now){return millApproach && !westGateOpen?scentShadeAt(now,westScent):0;}
+function woodsScentShade(now){return woods && !stoneDaggerFound?scentShadeAt(now,woodsScent):0;}
+function dismissScentHighlight(now){
+ let scent, clock=now, shade=0;
+ if(ruinsInterior===20 || ruinsInterior===22){
+  scent=ruinsScent;
+  clock=ruinsElapsed;
+  shade=scentShadeAt(clock,scent);
+ }else if(woods){
+  scent=woodsScent;
+  shade=woodsScentShade(now);
+ }else{
+  scent=westScent;
+  shade=westScentShade(now);
+ }
+ if(shade<=0 || scent.fade) return false;
+ scent.fade={at:clock,shade};
+ clearTimeout(infoTimer);
+ infoMessage='';
+ draw(eyesClosed);
+ return true;
+}
+function drawWestScentHighlight(shade){
+ ctx.save();
+ ctx.globalAlpha=shade;
+ ctx.fillStyle='#0b1710';
+ ctx.fillRect(0,0,160,144);
+ for(const [x,y] of westScentTrail) rect(x-1,y-2,5,6,2);
+ ctx.restore();
+ drawScentTracks(westScentTrail);
+ rect(westLatch.x-2,westLatch.y-4,5,5,3);
+ rect(westLatch.x,westLatch.y-3,1,3,0);
+}
+function drawWoodsScentTrail(){
+ for(let i=1;i<woodsScentTrail.length;i++){
+  const [x,y]=woodsScentTrail[i-1], [endX,endY]=woodsScentTrail[i];
+  for(let px=x;px>endX;px--){
+   const py=Math.round(y+(endY-y)*(x-px)/(x-endX));
+   rect(px,py,1,2,2);
+  }
+ }
+ for(const [x,y] of woodsScentTrail){
+  rect(x-2,y-3,6,5,0);rect(x-1,y-2,4,3,3);rect(x,y-3,2,1,3);
+ }
+ const {x,y}=woodsCache;
+ rect(x-2,y-5,4,1,3);rect(x-1,y-6,2,3,3);
+}
+function drawWoodsScentHighlight(shade){
+ ctx.save();
+ ctx.globalAlpha=shade;
+ ctx.fillStyle='#0b1710';
+ ctx.fillRect(0,0,160,144);
+ ctx.restore();
+ drawWoodsScentTrail();
+}
+function drawWoodsSign({x,y,direction}){
+ rect(x-1,y-7,3,8,0);rect(x-7,y-13,15,8,0);rect(x-6,y-12,13,6,2);
+ if(direction==='up'){
+  rect(x,y-11,1,5,0);rect(x-1,y-10,3,1,0);rect(x-2,y-9,5,1,0);
+ }else{
+  rect(x-4,y-9,8,1,0);rect(x+2,y-10,1,3,0);rect(x+1,y-11,1,5,0);
+ }
+}
+function drawWoodsTree(tree){
+ const x=tree.x+3,y=tree.bottom;
+ const age=performance.now()-tree.hitAt;
+ const flash=tree===gemTree && age<205 && Math.floor(age/62)%2===0;
+ const special=tree===gemTree;
+ if(tree===gemTree && !tree.hp){
+  rect(x-6,y-2,12,4,0);rect(x-4,y-5,8,5,flash?3:2);rect(x-2,y-4,4,2,1);
+  if(age<380){
+   const spread=Math.floor(age/55);
+   rect(x-7-spread,y-7+spread,3,2,2);
+   rect(x+5+spread,y-9+spread,3,2,3);
+   rect(x+spread,y-13+spread,2,2,2);
+  }
+  return;
+ }
+ rect(x-9,y-3,18,4,0);
+ rect(x-3,y-18,6,18,0);rect(x-1,y-12,2,11,flash?3:2);
+ for(const [dx,dy,w,h] of woodsCanopy){
+  rect(x+dx,y+dy,w,h,0);
+  rect(x+dx+2,y+dy+1,w-4,h-1,flash?3:1);
+  if(special && !flash){
+   ctx.fillStyle='#8d9050';
+   ctx.fillRect(x+dx+2,y+dy+1,w-4,h-1);
+  }
+ }
+ rect(x-5,y-28,5,1,2);rect(x-10,y-23,7,1,2);rect(x+2,y-19,8,1,2);
+ if(tree===gemTree)rect(x-1,y-6,2,2,3);
+}
+function groveLandmark(){
+ if(!wolfGrove || jump)return '';
+ const {x,y}=groveSurvivor;
+ if(!groveWolfDead && playerX>=x-12 && playerX<=x+33 && playerY>=y-15 && playerY<=y+12)
+  return 'Wounded Werewolf';
+ return playerX>=19 && playerX<=50 && playerY>=79 && playerY<=88?'Werewolf Den':'';
+}
+function advanceGroveDialogue(){
+ groveLine++;
+ if(groveLine<groveLines.length){
+  wolfDialogue.setAttribute('aria-label','Wounded Werewolf');
+  showDiscovery(groveLines[groveLine]);
+  return;
+ }
+ groveLine=-1;
+ discoveryOpen=false;
+ wolfDialogue.hidden=true;
+ wolfDialogue.setAttribute('aria-label','Final words');
+ groveWolfDead=true;
+ groveCollapseAt=performance.now();
+ queueStorySave();
+ draw(eyesClosed);
+}
+function drawGroveWolf(x,y,head=0,alive=false,reverse=false){
+ ctx.save();
+ ctx.translate(x+(reverse?19:0),y);
+ if(reverse)ctx.scale(-1,1);
+ const raised=Math.min(3,Math.round(-head/2));
+ // Back, shoulder and folded hind leg.
+ rect(4,-7,7,9,0);rect(10,-6,8,8,0);rect(17,-4,5,6,0);
+ rect(5,-6,5,3,2);rect(9,-5,7,5,1);rect(15,-4,5,4,1);
+ rect(14,-2,5,2,0);rect(17,-1,4,1,2);
+ rect(20,-2,3,2,0);rect(22,0,3,2,0);rect(23,1,2,1,1);
+ rect(9,1,4,3,0);rect(12,3,4,2,0);rect(13,3,2,1,2);
+ rect(16,1,3,3,0);rect(18,3,4,2,0);rect(20,3,1,1,2);
+ // Long front paw and raised neck that drops with the muzzle.
+ rect(3,-6-raised,4,8+raised,0);rect(4,-5-raised,2,4,2);
+ rect(4,1,3,3,0);rect(0,3,6,2,0);rect(1,3,3,1,2);
+ rect(-1,-6+head,7,6,0);rect(0,-5+head,5,3,1);
+ rect(-1,-10+head,2,5,0);rect(0,-8+head,2,3,1);
+ rect(4,-10+head,2,5,0);rect(5,-8+head,1,2,2);
+ rect(-4,-3+head,5,3,0);rect(-3,-2+head,4,1,2);
+ rect(-2,head,5,1,0);rect(3,-2+head,3,2,1);
+ if(alive && performance.now()%3150<2990)rect(0,-4+head,2,1,3);
+ else rect(0,-4+head,2,1,0);
+ ctx.restore();
+}
+function drawGroveSurvivor(){
+ const {x,y}=groveSurvivor;
+ const age=groveCollapseAt===null?Infinity:performance.now()-groveCollapseAt;
+ const head=groveWolfDead?Math.min(0,-6+Math.floor(age/56)):-6+Math.round(Math.sin(performance.now()/380));
+ drawGroveWolf(x,y,head,!groveWolfDead);
+ const rise=(age-350)/ghostDuration;
+ if(rise>=0 && rise<1)drawWolfSpirit(x,rise,y-5);
+}
+function drawWolfSpirit(x,progress,startY){
+ x+=Math.round(3*Math.sin(progress*Math.PI));
+ const y=startY-Math.round(32*progress);
+ ctx.save();
+ ctx.globalAlpha=Math.min(1,progress*12)*(1-progress);
+ rect(x,y-2,2,4,3);rect(x+6,y-3,2,5,3);
+ rect(x,y,8,6,3);rect(x-2,y+3,5,4,3);
+ rect(x+3,y+6,5,6,3);rect(x+5,y+12,2,3,3);
+ rect(x+1,y+2,1,1,0);rect(x+5,y+2,1,1,0);
+ ctx.restore();
+}
+function pushRuinsStatue(x,y,dx){
+ if(!ruinsApproach || !dx || jump || standingHeight || ruinsOpen)return false;
+ const statue=objectAt(x,y);
+ if(statue!==ruinsWolf && statue!==ruinsMan)return false;
+ const next=statue.x+dx;
+ if(statue===ruinsWolf?(next<27 || next>ruinsWolfCenter):(next<ruinsManCenter || next>123))return false;
+ statue.x=next;
+ if(ruinsWolf.x===ruinsWolfCenter && ruinsMan.x===ruinsManCenter){
+  ruinsOpen=true;
+  ruinsOpenedAt=performance.now();
+  playPickupSound([392,523,659]);
+  showInfo('Their hands meet. The gate opens.');
+ }
+ queueStorySave();
+ return true;
+}
+function drawRuinsApproach(){
+ rect(0,0,160,144,0);rect(5,7,150,132,1);
+ rect(5,36,150,69,2);rect(70,94,18,50,2);
+ rect(44,90,67,1,1);rect(44,92,67,1,1);
+ for(let i=0;i<31;i++){
+  const x=7+i*31%145,y=94+i*17%20;
+  rect(x,y,2+i%4,2,i%2?1:2);
+ }
+ for(let y=60;y<101;y+=8){
+  rect(5,y,150,1,1);
+  for(let x=7+y%7;x<155;x+=19)rect(x,y,1,7,1);
+ }
+ for(let y=20;y<54;y+=7){
+  rect(6,y,148,6,1);
+  for(let x=8+y%9;x<151;x+=17)rect(x,y,12,1,2);
+ }
+ for(const [x,y,w] of [[13,109,15],[30,97,12],[133,113,13],[145,88,8]])drawGroveRock(x,y,w);
+ for(const [x,y] of [[13,128],[38,118],[57,135],[96,130],[119,121],[146,135]])drawGroveReeds(x,y);
+ rect(66,34,28,25,0);
+ rect(67,35,4,23,3);rect(89,35,4,23,3);
+ if(!ruinsOpen){
+  for(let x=72;x<89;x+=4)rect(x,37,2,21,2);
+  rect(71,48,18,2,2);
+ }
+ for(let i=0;i<3;i++){
+  const phase=performance.now()/520+i*1.07;
+  const x=40+i*34+Math.round(Math.sin(phase)*22),y=64+i*8+Math.round(Math.sin(phase*2)*3);
+  drawRuinsMouse(x,y,Math.cos(phase)>=0?1:-1,Math.floor(phase*6)%2);
+ }
+}
+function drawRuinsMouse(x,y,dir,step){
+ ctx.save();ctx.translate(x,y);ctx.scale(dir,1);
+ rect(-7,1,4,1,0);rect(-8,0,2,1,1);rect(-4,-2,7,5,0);
+ rect(-3,-1,6,3,2);rect(1,-3,4,5,0);rect(2,-2,3,3,2);
+ rect(2,-5,2,3,0);rect(3,-4,1,1,3);rect(4,-2,1,1,3);
+ rect(5,0,2,1,0);rect(-3+step,3,2,1,0);rect(2-step,2,2,1,0);
+ ctx.restore();
+}
+function drawRuinsStatue(statue,wolf){
+ const x=statue.x,y=statue.bottom;
+ rect(x-2,y-3,15,4,0);rect(x-1,y-4,13,2,1);rect(x,y-3,11,1,3);
+ rect(x+1,y-11,4,7,0);rect(x+7,y-11,4,7,0);
+ rect(x+2,y-10,2,5,2);rect(x+8,y-10,2,5,1);
+ rect(x+1,y-21,10,12,0);rect(x+2,y-20,8,10,2);
+ rect(x+3,y-20,2,8,3);rect(x+7,y-17,3,7,1);
+ if(wolf){
+  rect(x+2,y-32,2,8,0);rect(x+7,y-31,2,7,0);
+  rect(x+2,y-27,8,8,0);rect(x+4,y-26,5,5,2);
+  rect(x+8,y-24,5,4,0);rect(x+9,y-23,3,1,3);
+  rect(x+3,y-25,1,1,3);rect(x,y-16,2,6,1);
+  rect(x+9,y-19,4,4,0);rect(x+11,y-22,4,4,1);
+  rect(x+13,y-24,3,4,2);rect(x+15,y-25,2,3,3);
+ }else{
+  rect(x+3,y-30,7,10,0);rect(x+3,y-28,5,6,2);
+  rect(x+2,y-26,3,3,2);rect(x+3,y-27,1,1,0);
+  rect(x+4,y-29,5,2,1);rect(x+9,y-18,2,7,1);
+  rect(x-1,y-19,5,4,0);rect(x-3,y-22,4,4,1);
+  rect(x-4,y-24,3,4,2);rect(x-4,y-25,2,3,3);
+ }
+}
+function drawRuinsArchCap(){
+ rect(66,34,28,5,0);rect(69,29,22,6,0);rect(73,25,14,5,0);
+ rect(68,35,24,2,2);rect(70,30,20,3,3);rect(74,26,12,3,3);
+}
+function drawRuinsTraveler(blink){
+ if(!ruinsOpen || playerY>=60 || playerX<72 || playerX>88){drawTraveler(blink);return;}
+ // Only the exposed mouth of the passage can show Luca once he enters the wall.
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(71,46,18,14);
+ ctx.clip();
+ drawTraveler(blink);
+ ctx.restore();
+}
+function drawInteriorDoor(y,open){
+ rect(69,y-12,22,16,0);rect(71,y-11,18,12,1);rect(73,y-8,14,12,0);
+ rect(69,y-11,2,15,2);rect(89,y-11,2,15,2);rect(72,y-12,16,1,3);
+ if(open)rect(74,y+2,12,4,2);
+ else for(let x=75;x<87;x+=3)rect(x,y-7,1,10,2);
+}
+function drawRuinsInterior(){
+ rect(0,0,160,144,0);rect(7,14,146,123,1);rect(12,45,136,91,2);
+ for(let y=45;y<135;y+=9){
+  rect(12,y,136,1,1);
+  for(let x=13+y%9;x<148;x+=18)rect(x,y+1,1,8,1);
+ }
+ for(let y=16;y<44;y+=7){
+  rect(8,y,144,1,0);
+  for(let x=14+y%5;x<150;x+=13)rect(x,y,1,6,0);
+ }
+ for(let i=0;i<24;i++){
+  const x=15+i*41%128,y=47+i*31%83;
+  rect(x,y,3+i%5,1,1);
+ }
+ drawInteriorDoor(137,true);
+ drawRuinsGate();
+ if(ruinsInterior===23 && ruinsState.bridge)drawStrongholdHorizon();
+ drawRuinsFeatures();
+}
+function drawRuinsActors(blink){
+ const actors=ruinsApproachTrees.map(tree=>({depth:tree.bottom,draw:()=>drawGroveTree(tree)}));
+ actors.push({depth:ruinsWolf.bottom,draw:()=>drawRuinsStatue(ruinsWolf,true)},
+  {depth:ruinsMan.bottom,draw:()=>drawRuinsStatue(ruinsMan,false)},{depth:playerY,draw:()=>drawRuinsTraveler(blink)});
+ for(const actor of actors.sort((a,b)=>a.depth-b.depth))actor.draw();
+ if(performance.now()-ruinsOpenedAt<760)drawSparkle(ruinsMan.x-4,ruinsMan.bottom-25);
+ drawRuinsArchCap();
+}
+function drawGroveActors(blink){
+ const actors=groveTrees.map(tree=>({depth:tree.bottom,draw:()=>drawGroveTree(tree)}));
+ actors.push({depth:groveDen.bottom,draw:drawGroveDen},{depth:groveSurvivor.y,draw:drawGroveSurvivor},
+  {depth:playerY,draw:()=>drawTraveler(blink)});
+ for(const [index,[x,y]] of groveWolves.entries())
+  actors.push({depth:y,draw:()=>drawGroveWolf(x,y,0,false,index%2===1)});
+ for(const actor of actors.sort((a,b)=>a.depth-b.depth))actor.draw();
+}
+function drawGroveRock(x,y,w){
+ rect(x,y-5,w,6,0);rect(x+2,y-8,w-4,8,0);rect(x+3,y-7,w-6,6,2);
+ rect(x+4,y-6,w-8,2,3);rect(x+2,y-3,w-4,3,1);
+}
+function drawGroveReeds(x,y){
+ rect(x,y-6,1,6,2);rect(x-2,y-3,1,3,2);rect(x-4,y-5,2,2,2);
+ rect(x+2,y-4,1,4,2);rect(x+3,y-6,2,2,2);rect(x,y-3,1,2,3);
+}
+function drawGrove(){
+ rect(0,0,160,144,0);rect(4,6,152,135,1);
+ rect(4,18,152,46,0);
+ for(let i=0;i<37;i++){
+  const x=5+i*13%148,y=18+i*19%24;
+  rect(x,y,12,4,i%4?1:2);rect(x+3,y+2,6,4,1);
+  rect(x+3,y+7,2,22,1);
+ }
+ for(let x=37;x<160;x++){
+  const y=grovePath.top-1+Math.round(Math.sin(x/19)*1.25);
+  rect(x,y-1,1,15,0);rect(x,y,1,12,2);
+ }
+ for(let i=0;i<135;i++){
+  const x=6+i*43%148,y=18+i*23%121;
+  rect(x,y,1+i%3,1,y>=101 && y<=114?1:i%6?1:2);
+ }
+ for(const [x,y,w] of [[9,82,12],[52,79,14],[64,94,16],[41,116,12],[58,118,15],[7,138,15],[143,132,11]])drawGroveRock(x,y,w);
+ for(const [x,y] of [[8,73],[14,98],[22,66],[51,76],[67,81],[72,96],[96,93],[134,97],[51,119],[69,130],[106,127],[145,139],[12,137],[151,88],[111,111]])drawGroveReeds(x,y);
+ ctx.fillStyle='#602d29';
+ for(const [x,y] of [...groveWolves,[groveSurvivor.x,groveSurvivor.y]]){
+  ctx.fillRect(x-3,y+2,26,2);ctx.fillRect(x+1,y+4,15,2);ctx.fillRect(x+6,y+6,8,1);
+ }
+ ctx.fillRect(25,77,21,4);ctx.fillRect(31,81,15,2);ctx.fillRect(39,83,11,2);ctx.fillRect(47,85,9,2);
+ ctx.fillRect(44,87,6,2);ctx.fillRect(39,89,7,2);ctx.fillRect(43,91,12,2);
+ ctx.fillRect(68,110,10,2);ctx.fillRect(63,113,8,2);ctx.fillRect(30,108,7,1);
+}
+function drawGroveTree(tree){
+ const x=tree.x+3,y=tree.bottom;
+ rect(x-10,y-1,20,3,0);
+ rect(x-3,y-25,7,26,0);rect(x-1,y-20,3,19,2);
+ rect(x-8,y-2,7,2,2);rect(x+1,y-2,8,2,2);
+ for(let i=0;i<4;i++){
+  rect(x-i*2,y-13-i*2,3,4,2);rect(x+i*2,y-17-i*2,3,5,2);
+ }
+ for(const [dx,dy,w,h] of [[-7,-39,14,6],[-12,-34,25,7],[-16,-28,33,8],[-13,-21,28,5]]){
+  rect(x+dx,y+dy,w,h,0);rect(x+dx+2,y+dy+1,w-4,h-2,1);
+  rect(x+dx+3,y+dy+1,w-7,2,2);
+  for(let j=4;j<w-3;j+=5)rect(x+dx+j,y+dy+3,3,2,j%2?2:3);
+ }
+}
+function drawGroveDen(){
+ const {x,bottom:y,width:w}=groveDen;
+ for(let row=0;row<8;row++){
+  const inset=Math.max(0,3-row)*3;
+  rect(x+inset,y-45+row*6,w-inset*2,7,0);
+  rect(x+inset+1,y-45+row*6,w-inset*2-2,4,row%2?1:2);
+  if(row%2===0)rect(x+inset+2,y-45+row*6,w-inset*2-4,1,3);
+ }
+ rect(x+16,y-26,12,25,0);rect(x+12,y-23,20,24,0);
+ rect(x+9,y-19,26,21,0);rect(x+5,y-14,31,16,0);
+ ctx.fillStyle='#602d29';ctx.fillRect(x+7,y-13,2,9);ctx.fillRect(x+w-5,y-13,2,8);ctx.fillRect(x+12,y+1,24,2);
+ drawGroveRock(x-4,y+3,11);drawGroveRock(x+w-3,y+2,11);
+ for(const [u,v] of [[x+2,y-39],[x+5,y-35],[x+w-4,y-19]])drawGroveReeds(u,v);
+}
+function drawWoodsActors(blink){
+ for(const sign of woodsSigns)drawWoodsSign(sign);
+ if(woodsPotion)drawMillDrop(woodsPotion);
+ const actors=woodsTrees.map(tree=>({depth:tree.bottom,draw:()=>drawWoodsTree(tree)}));
+ actors.push({depth:woodsBoar.bottom,draw:drawWoodsBoar},{depth:playerY,draw:()=>drawTraveler(blink)});
+ for(const actor of actors.sort((a,b)=>a.depth-b.depth))actor.draw();
+}
+function drawWoods(){
+ rect(0,0,160,144,0);rect(5,7,150,132,1);
+ rect(0,grovePath.top-2,38,16,0);rect(0,grovePath.top,39,12,2);
+ for(let y=0;y<111;y++){
+  const curve=Math.round(Math.sin(Math.max(0,y-42)*.058)*6);
+  const {left,right}=woodsNorthTrail;
+  rect(left+curve-2,y,right-left+4,1,0);rect(left+curve,y,right-left,1,2);
+ }
+ for(let x=78;x<160;x++){
+  const y=91+Math.round(Math.sin(x*.055)*3);
+  rect(x,y,1,17,0);rect(x,y+2,1,13,2);
+ }
+ for(let x=23;x<91;x++){
+  const y=111-Math.round((x-23)/11);
+  rect(x,y,1,9,0);rect(x,y+1,1,7,2);
+ }
+ for(let i=0;i<95;i++){
+  const x=7+i*43%146,y=9+i*29%129;
+  rect(x,y,1+i%3,1,(i%5===0)?2:1);
+ }
+ for(const [x,y] of [[14,113],[49,122],[59,60],[111,86],[129,110],[106,116],[44,67]]){
+  rect(x-2,y,5,1,0);rect(x,y-3,1,4,0);rect(x-3,y-2,1,2,2);rect(x+2,y-2,1,2,2);
+ }
+ const {x,y}=woodsCache;
+ rect(x-6,y-4,12,7,0);rect(x-5,y-5,10,4,2);rect(x-3,y-4,5,2,0);
+ for(const gem of treeGemDrops)drawGroundGem(gem);
+ if(woodsTrailRevealed && !stoneDaggerFound)drawWoodsScentTrail();
+}
 function drawMillApproach(){
  rect(0,0,160,144,0);
  rect(5,6,150,133,1);
@@ -1919,11 +2684,13 @@ function drawMillApproach(){
  rect(125,54,12,8,0);rect(127,55,8,5,3);
  rect(101,76,37,3,0);rect(115,76,9,3,2);
  rect(144,97,11,3,3);rect(151,95,3,7,3);
- // The service gate will become the return shortcut.
- rect(116,111,27,11,0);
- for(let x=118;x<141;x+=4) rect(x,113,2,7,2);
- rect(117,117,25,2,1);rect(128,116,3,3,3);
+ drawServiceRoad();
  drawVillageGate();
+ rect(westLatch.x-2,westLatch.y-4,5,6,0);rect(westLatch.x-1,westLatch.y-3,3,3,2);
+ if(westTrailRevealed && !westGateOpen){
+  drawScentTracks(westScentTrail);
+  rect(westLatch.x-1,westLatch.y-2,3,1,3);
+ }
  rect(23,87,2,8,0);rect(16,85,15,4,0);rect(18,86,11,2,3);
  for(const [x,y] of [[27,123],[57,119],[145,113],[56,37]]){
   rect(x+3,y,5,2,0);rect(x,y+2,11,7,0);rect(x+2,y+3,7,3,2);rect(x+5,y+8,2,4,0);
@@ -1932,9 +2699,44 @@ function drawMillApproach(){
  const rain=Math.floor(performance.now()/80);
  for(let i=0;i<32;i++) rect((i*37+157-rain%160)%153+5,(i*29+rain*5)%134+5,1,2,2);
 }
+function drawServiceRoad(){
+ const {x,y,width}=serviceGate;
+ for(const rail of serviceRails){
+  rect(rail.x,rail.y,3,rail.bottom-rail.y,0);
+  for(let post=rail.y;post<rail.bottom;post+=9){
+   rect(rail.x-1,post-2,5,5,0);rect(rail.x,post-1,3,2,2);
+  }
+ }
+ for(const post of [x-2,x+width-1]){
+  rect(post,y-2,4,13,0);rect(post+1,y-1,2,10,2);
+ }
+ if(!serviceGateOpen){
+  rect(x,y,width,11,0);
+  for(let bar=x+2;bar<x+width-2;bar+=4) rect(bar,y+2,2,7,2);
+  rect(x+1,y+6,width-2,2,1);rect(x+12,y+5,3,3,3);
+ }else{
+  rect(x,y+1,4,9,1);rect(x+width-4,y+1,4,9,1);
+  rect(x+4,y+8,width-8,1,3);
+ }
+ const elapsed=performance.now()-shortcutRockMovedAt;
+ const travel=sluiceShortcutOpened?Math.max(0,Math.min(1,elapsed/shortcutRockSlideTime)):0;
+ if(travel>0){
+  rect(122,131,16,8,0);rect(124,132,12,5,1);
+  for(let step=0;step<3;step++) rect(126+step,133+step,9-step*2,1,2);
+ }
+ const rockX=shortcutRock.x+Math.round((shiftedRock.x-shortcutRock.x)*travel*travel*(3-2*travel));
+ rect(rockX,134,17,5,0);rect(rockX+2,128,14,9,0);
+ rect(rockX+5,126,8,3,0);rect(rockX+4,129,9,6,2);
+ rect(rockX+1,134,10,3,1);rect(rockX+9,128,4,2,3);rect(rockX+11,132,4,4,1);
+ if(travel>0 && travel<1){
+  const drift=Math.floor(travel*8);
+  for(let i=0;i<5;i++) rect(rockX-drift+i%3,134-i-drift%4,1+i%2,1,2+i%2);
+ }
+}
 function drawVillageGate(){
  const {x,y,width,bottom}=villageGate;
  rect(x-2,y-3,width+5,4,0);rect(x-2,bottom-1,width+5,4,0);
+ if(westGateOpen){rect(x+5,y+1,5,4,2);rect(x+6,y+2,4,1,3);return;}
  rect(x,y,width,bottom-y,0);rect(x+1,y+1,width-2,bottom-y-2,1);
  for(let row=y+2;row<bottom-2;row+=4) rect(x+2,row,width-4,2,2);
  rect(x+width-1,y+2,1,bottom-y-4,2);
@@ -1954,9 +2756,7 @@ function drawGrassField(){
     rect(x+1-spread,y+2-spread,2,1,2);
     rect(x+5+spread,y+1-spread,2,1,3);
    }
-   if(tile.gemAvailable){
-    rect(x+2,y+2,5,3,0);rect(x+3,y+1,3,5,3);rect(x+4,y+4,1,1,2);
-   }
+   drawGroundGem({x:x+4,y:y+4,available:tile.gemAvailable});
   }
  }
 }
@@ -2126,12 +2926,17 @@ function helmetIcon(){
  drawStrawHelmet(icon.getContext('2d'),0,0);
  return icon;
 }
-function drawFront(blink){
- rect(74,83,12,19,0);rect(72,87,16,13,0);
- rect(76,82,8,2,0);rect(75,85,10,4,1);rect(77,89,8,6,3);
- rect(73,90,4,4,1);rect(85,90,2,4,1);
- rect(78,90,blink?2:1,blink?1:2,0);rect(82,90,blink?2:1,blink?1:2,0);
- rect(75,96,10,5,2);rect(76,96,8,2,1);
+function drawFront(blink,stoneBody=false){
+ drawStoneEquipment(lucaFrontHead,80,82);
+ if(blink){
+  rect(77,90,2,1,1);rect(82,90,2,1,1);
+ }else{
+  rect(77,90,1,1,0);rect(81,90,1,1,0);
+ }
+ rect(75,96,10,6,0);rect(76,96,8,5,2);rect(77,99,6,1,1);
+ rect(73,96,3,5,0);rect(74,96,2,3,1);
+ rect(84,96,3,5,0);rect(84,96,2,3,1);
+ if(stoneBody) drawStoneEquipment(stoneCuirassFront,80,95);
  rect(74,98,2,3,3);
  if(raisedItem){
   rect(85,90,4,10,0);rect(86,91,2,8,2);rect(87,85,3,6,0);rect(88,85,1,4,3);
@@ -2144,32 +2949,46 @@ function drawFront(blink){
   rect(84,98,2,3,3);
  }
 }
-function drawBack(){
- rect(74,83,12,19,0);rect(72,87,16,13,0);
- rect(76,82,8,2,0);rect(75,85,10,8,1);
- rect(77,86,6,1,2);rect(76,93,8,2,1);
+function drawBack(blink,lookBack=false,stoneBody=false){
+ rect(75,94,10,8,0);rect(73,96,3,5,0);rect(84,96,3,5,0);
+ if(lookBack){
+  ctx.save();ctx.translate(160,0);ctx.scale(-1,1);
+  drawProfileHead(blink);
+  ctx.restore();
+ }else{
+  drawStoneEquipment(lucaBackHead,80,82);
+ }
+ rect(76,93,8,2,1);
  rect(75,96,10,5,2);rect(77,96,6,4,1);
+ if(stoneBody) drawStoneEquipment(stoneCuirassBack,80,94);
  rect(74,98,2,3,3);rect(84,98,2,3,3);
 }
 function drawFeet(){
  const leftFoot=102+stride*2;
  const rightFoot=102-stride*2;
- rect(75,101,5,leftFoot-97,0);
- rect(80,101,5,rightFoot-97,0);
- rect(76,leftFoot,3,3,1);
- rect(81,rightFoot,3,3,1);
+ rect(75,101,4,Math.max(2,leftFoot-98),0);
+ rect(81,101,4,Math.max(2,rightFoot-98),0);
+ rect(75,leftFoot+1,4,2,1);
+ rect(81,rightFoot+1,4,2,1);
 }
-function drawProfile(blink){
- rect(75-stride*2,101,5,4,1);
- rect(75,84,10,17,0);rect(77,82,6,3,0);
- rect(76,85,7,8,1);rect(81,88,4,1,3);rect(81,89,5,5,3);rect(81,94,4,1,3);
- rect(83,89,blink?2:1,blink?1:2,0);
- rect(76,95,9,6,2);rect(78,96,3,4,1);rect(80+stride,98,2,3,3);
+function drawProfileHead(blink){
+ drawStoneEquipment(lucaProfileHead,80,82);
+ rect(82,89,blink?2:1,1,blink?1:0);
+}
+function drawProfile(blink,stoneBody=false){
+ rect(76-stride*2,101,4,4,1);
+ rect(75,94,10,8,0);
+ drawProfileHead(blink);
+ rect(76,95,9,6,2);
+ if(stoneBody) drawStoneEquipment(stoneCuirassProfile,80,95);
+ rect(78+stride,96,3,4,1);
+ if(stoneBody) rect(79+stride,96,1,2,2);
+ rect(79+stride,99,2,2,3);
  rect(80+stride*2,101,4,5,0);rect(81+stride*2,104,4,2,1);
 
 }
 let screen='title', blinkTimer;
-music.volume=yard && !inShop && !inMill?.35:1;
+music.volume=yard && !inShop && !inMill && !ruinsInterior?.35:1;
 draw(false);
 function resumeFire(){
  fireTimer=setInterval(()=>{
@@ -2271,6 +3090,43 @@ function drawFlyingArrow(){
  }
  pixel(tip,0,3);
 }
+function drawPounceWeapon(weapon){
+ if(weapon==='bow'){
+  rect(-2,0,11,1,2);rect(-2,-1,3,3,3);
+  rect(7,-1,2,3,3);rect(9,0,1,1,3);
+ }else if(weapon==='stone-dagger'){
+  drawStoneBlade();
+ }else{
+  rect(-2,0,4,1,2);rect(2,-1,7,2,3);rect(9,0,1,1,2);
+ }
+}
+function drawPounceStrike(){
+ const progress=(performance.now()-pounceStrike.at)/pounceStrikeDuration;
+ if(progress>=1){pounceStrike=null;return;}
+ const {x,y,direction,weapon}=pounceStrike;
+ const [dx,dy]=directions.get(direction);
+ const swing=Math.atan2(dy,dx)+(progress-.5)*2.4;
+ ctx.save();
+ ctx.translate(x,y);
+ ctx.globalAlpha*=1-progress;
+ for(let i=0;i<6;i++){
+  const angle=swing-i*.16;
+  rect(Math.round(Math.cos(angle)*15),Math.round(Math.sin(angle)*10),2,1,i<3?3:2);
+ }
+ ctx.rotate(swing);
+ ctx.translate(7,0);
+ drawPounceWeapon(weapon);
+ ctx.restore();
+}
+function drawStoneWave(){
+ const {x,y,height,dx,dy,distance}=stoneWave;
+ for(let side=-7;side<=7;side++){
+  const forward=distance-Math.floor(Math.abs(side)*.56);
+  const px=x+dx*forward-dy*side,py=y+dy*forward+dx*side-height-6;
+  rect(px,py,1,1,3);
+  rect(px-dx,py-dy,1,1,Math.abs(side)<5?2:1);
+ }
+}
 function drawDebris(){
  const flashElapsed=debrisElapsed-scatterTime-restTime;
  if(flashElapsed>=0 && Math.floor(flashElapsed/80)%2===1) return;
@@ -2293,8 +3149,29 @@ function animateDebris(now){
  draw(eyesClosed);
  if(debrisElapsed<debrisDuration) debrisFrame=requestAnimationFrame(animateDebris);
 }
+function drawStoneSwipe(dx,dy){
+ const {windup}=weaponAttacks['stone-dagger'];
+ const elapsed=performance.now()-stoneSwipeAt;
+ const swing=Math.max(0,Math.min(1,(elapsed-55)/100));
+ const angle=Math.atan2(dy,dx)-1.16+swing*2.32;
+ const reach=5+Math.sin(swing*Math.PI)*3-Math.min(1,Math.max(0,(elapsed-155)/110))*2;
+ ctx.save();
+ ctx.translate(playerX,playerY-9);
+ if(swing>0 && elapsed<windup+73){
+  for(let i=1;i<=6;i++){
+   const trail=angle-i*.15;
+   rect(Math.round(Math.cos(trail)*15),Math.round(Math.sin(trail)*15),2,1,i<3?3:2);
+  }
+ }
+ ctx.rotate(angle);
+ rect(0,-1,reach+1,3,2);
+ ctx.translate(reach,0);
+ drawStoneBlade();
+ ctx.restore();
+}
 function drawJab(){
  const [dx,dy]=directions.get(facing);
+ if(equippedItem===stoneDagger.id){drawStoneSwipe(dx,dy);return;}
  const side=dx===0?5:0;
  const extension=jabFrame===1?1:5;
  const x=playerX+side+dx*(4+extension);
@@ -2311,6 +3188,12 @@ function drawJab(){
  rect(4,-1,2,1,3);
  ctx.restore();
 }
+function drawStoneBlade(){
+ rect(-3,0,6,2,0);rect(-2,0,4,1,2);rect(2,-2,2,5,0);
+ rect(4,-2,5,5,0);rect(7,-3,3,5,0);rect(9,-2,4,3,0);
+ rect(5,-1,4,3,2);rect(8,-2,2,3,2);rect(10,-1,2,1,3);
+ rect(6,0,1,1,3);rect(8,-1,1,1,3);
+}
 let effectsAudio;
 let nextFootstep=0;
 const attackSounds={
@@ -2320,10 +3203,13 @@ const attackSounds={
  punch:[.09,'bandpass',480,190,.24,0],
  hit:[.12,'lowpass',850,190,.28,105],
  crack:[.16,'highpass',1900,650,.30,145],
- swipe:[.13,'bandpass',3700,1050,.21,0]
+ swipe:[.13,'bandpass',3700,1050,.21,0],
+ boarTell:[.19,'lowpass',520,220,.16,96],
+ boarCharge:[.19,'bandpass',740,260,.15,82],
+ stoneWave:[.16,'bandpass',1740,780,.13,0]
 };
 function syncOutdoorAudio(){
-  if(yard && !inShop && !inMill && effectsAudio && !rainSource){
+  if(yard && !inShop && !inMill && !ruinsInterior && effectsAudio && !rainSource){
    const buffer=effectsAudio.createBuffer(1,effectsAudio.sampleRate*2,effectsAudio.sampleRate);
    const noise=buffer.getChannelData(0);
    for(let i=0;i<noise.length;i++) noise[i]=Math.random()*2-1;
@@ -2337,11 +3223,11 @@ function syncOutdoorAudio(){
    rainSource.loop=true;
    rainSource.connect(filter).connect(gain).connect(effectsAudio.destination);
    rainSource.start();
-  }else if((!yard || inShop || inMill) && rainSource){
+  }else if((!yard || inShop || inMill || ruinsInterior) && rainSource){
    rainSource.stop();
    rainSource=null;
   }
-  music.volume=yard && !inShop && !inMill?.35:1;
+  music.volume=yard && !inShop && !inMill && !ruinsInterior?.35:1;
 }
 function unlockEffects(){
  const AudioContextClass=window.AudioContext || window.webkitAudioContext;
@@ -2406,7 +3292,7 @@ function stopWolfGrowl(){
  wolfGrowl.stop();
  wolfGrowl=null;
 }
-function playPickupSound(notes){
+function playPickupSound(notes,volume=.075,duration=.17){
  if(!effectsAudio) return;
  for(const [index,pitch] of notes.entries()){
   const time=effectsAudio.currentTime+index*.075;
@@ -2415,11 +3301,11 @@ function playPickupSound(notes){
   tone.type='triangle';
   tone.frequency.value=pitch;
   envelope.gain.setValueAtTime(.001,time);
-  envelope.gain.linearRampToValueAtTime(.075,time+.012);
-  envelope.gain.exponentialRampToValueAtTime(.001,time+.17);
+  envelope.gain.linearRampToValueAtTime(volume,time+.012);
+  envelope.gain.exponentialRampToValueAtTime(.001,time+duration);
   tone.connect(envelope).connect(effectsAudio.destination);
   tone.start(time);
-  tone.stop(time+.17);
+  tone.stop(time+duration);
  }
 }
 function spiderAtArrowTip(x,y,dx,dy,spiders){
@@ -2430,7 +3316,9 @@ function spiderAtArrowTip(x,y,dx,dy,spiders){
   y>=spider.y-1-padY && y<=spider.bottom-1+padY);
 }
 function attackRoomTargets(){
+ if(ruinsInterior)return ruinsAttackTargets();
  if(sluiceRoom && boss.phase==='battle') return [boss,...roomObjects()];
+ if(woods) return [...woodsTrees,woodsBoar];
  return ditch?[cart,wolf]:yard?roomObjects():[...furniture,...damageableCharacters.values()];
 }
 function cutGrassAt(x,y,height){
@@ -2444,12 +3332,39 @@ function cutGrassAt(x,y,height){
  playAttackSound('crack');
  return true;
 }
-function hitAttackTarget(target){
+function hitAttackTarget(target, multiplier=1){
  if(!(target.hp>0)) return;
+ if(target===ruinsHound){
+  playAttackSound('crack');
+  showInfo('Its hide is solid stone.');
+  return;
+ }
+ if(target===gemTree){
+  treeGemDrops[treeGemDrops.length-target.hp].available=true;
+  target.hp--;
+  target.hitAt=performance.now();
+  playAttackSound(target.hp?'hit':'crack');
+  queueStorySave();
+  return;
+ }
  const base=stats.get('str')?.value??10;
- const bonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.strBonus??0),0);
- const damage=base+bonus;
+ const bonus=gearBonus('strBonus');
+ const damage=Math.floor((base+bonus)*multiplier);
  target.hp=Math.max(0,target.hp-damage);
+ if(ruinsInterior)target.hitAt=ruinsElapsed;
+ if(target===woodsBoar){
+  const now=performance.now();
+  woodsBoar.hitUntil=now+115;
+  if(!target.hp){
+   woodsBoar.defeatedAt=now;
+   woodsPotion={item:potion,x:Math.round(target.x+target.width/2),y:Math.round(target.bottom)};
+  }
+  else{
+   woodsBoar.phase='recover';
+   woodsBoar.until=now+830;
+   woodsBoar.chargeReadyAt=Math.max(woodsBoar.chargeReadyAt,now+830);
+  }
+ }
  if(target.hp===0 && currentMillSpiders().includes(target)){
   target.defeatedAt=performance.now();
   if(sluiceRoom && boss.phase==='battle' && ++boss.spidersDefeated%2===0){
@@ -2482,6 +3397,8 @@ function hitAttackTarget(target){
   }
  }
  if(target===boss && !boss.hp) defeatSluiceBoss();
+ if(target===ruinsGuard && !target.hp) defeatRuinsGuard();
+ if(ruinsInterior && !target.hp && ruinsEnemies[ruinsInterior]?.includes(target))defeatRuinsScorpion(target);
  if(target===wolf && !wolf.hp){
   stopWolfGrowl();
   wolfFinalWordsPending=true;
@@ -2497,8 +3414,8 @@ function hitAttackTarget(target){
   detail:{id:target.id,damage,hp:target.hp}
  }));
 }
-function damageInReach(reach){
- const [dx,dy]=directions.get(facing);
+function damageInReach(reach,multiplier=1,direction=facing){
+ const [dx,dy]=directions.get(direction);
  const targets=attackRoomTargets();
  // Give close-range attacks room across the swing while keeping them in front.
  const spidersInFront=currentMillSpiders().filter(spider=>
@@ -2509,7 +3426,7 @@ function damageInReach(reach){
   const x=playerX+dx*distance,y=playerY+dy*distance;
   const target=objectAt(x,y,false,height,targets)??
    objectAt(x,y,false,height,spidersInFront,Math.abs(dy)*4,Math.abs(dx)*6);
-  if(target){hitAttackTarget(target);return;}
+  if(target){hitAttackTarget(target,multiplier);return target;}
   if(cutGrassAt(x,y,height)) return;
  }
 }
@@ -2519,6 +3436,12 @@ function releaseArrow(reach){
  arrowShot={x,y,dx,dy,groundX:playerX,groundY:playerY,height:jump?.height??standingHeight,
   reach,distance:0,stopped:false,startedAt:performance.now()};
  advanceFlyingArrow(arrowShot.startedAt);
+}
+function goldenTreeAtArrowTip(x,y){
+ if(!woods || !gemTree.hp) return;
+ const dx=x-(gemTree.x+3),dy=y-gemTree.bottom;
+ if(dx>=-3 && dx<3 && dy>=-18 && dy<0 ||
+  woodsCanopy.some(([left,top,w,h])=>dx>=left && dx<left+w && dy>=top && dy<top+h)) return gemTree;
 }
 function advanceFlyingArrow(now){
  const shot=arrowShot;
@@ -2533,6 +3456,7 @@ function advanceFlyingArrow(now){
   const distance=++shot.distance;
   const floorX=groundX+dx*distance,floorY=groundY+dy*distance;
   const target=objectAt(floorX,floorY,false,height,targets)??
+   goldenTreeAtArrowTip(x+dx*distance,y+dy*distance)??
    spiderAtArrowTip(x+dx*distance,y+dy*distance,dx,dy,spiders);
   if(target || cutGrassAt(floorX,floorY,height)){
    shot.stopped=true;
@@ -2542,11 +3466,36 @@ function advanceFlyingArrow(now){
  }
  if(shot.distance>=reach) shot.stopped=true;
 }
+function releaseStoneWave(bladeTarget){
+ if(currentHp()!==maxHp() || bossControlsLocked()) return;
+ const [dx,dy]=directions.get(facing);
+ stoneWave={x:playerX,y:playerY,height:jump?.height??standingHeight,dx,dy,distance:2,
+  startedAt:performance.now(),bladeTarget};
+ playAttackSound('stoneWave');
+}
+function advanceStoneWave(now){
+ const wave=stoneWave;
+ const {x,y,dx,dy,height,startedAt,bladeTarget}=wave;
+ const reach=32;
+ const end=Math.min(reach,2+Math.floor((now-startedAt)*.16));
+ const targets=[...attackRoomTargets(),...currentMillSpiders()].filter(target=>target!==bladeTarget || target.hp===undefined);
+ while(wave.distance<end){
+  const distance=++wave.distance,px=x+dx*distance,py=y+dy*distance;
+  const target=objectAt(px,py,false,height,targets,Math.abs(dy)*3,Math.abs(dx)*4);
+  if(target || cutGrassAt(px,py,height)){
+   stoneWave=null;
+   if(target)hitAttackTarget(target);
+   return;
+  }
+ }
+ if(wave.distance>=reach)stoneWave=null;
+}
 function endPunch(){
  clearTimeout(punchTimer);
  clearTimeout(jabTimer);
  jabFrame=0;
  arrowShot=null;
+ stoneWave=null;
  punching=false;
 }
 document.addEventListener('game:equipment-change',event=>{
@@ -2575,11 +3524,14 @@ function startPunch(){
   if(shopStep==='hello') showShopDialogue('choice');
   else if(shopStep==='choice') showShopDialogue(shopChoice===0?'buy':'sell');
   else if(shopStep==='buy') buyShopItem();
-  else showShopDialogue('choice');
+  else if(shopStep==='sell') sellShopItem();
   return;
  }
  if(discoveryOpen){
-  if(readingNote){closeEmperorNote();return;}
+  if(advanceRuinsGuardDialogue())return;
+  ruinsVista=false;
+  if(wolfGrove && groveLine>=0){advanceGroveDialogue();return;}
+  if(readingNote){closeReading();return;}
   discoveryOpen=false;wolfDialogue.hidden=true;draw(eyesClosed);return;
  }
  if(screen==='play' && !changingRoom){
@@ -2621,19 +3573,23 @@ function startPunch(){
  if(screen!=='play' || punching || jabFrame || chestLid) return;
  if(changingRoom) return;
  if(shopkeeperInReach()){stop();shopChoice=0;showShopDialogue('hello');draw(eyesClosed);return;}
- const landmark=approachLandmark();
+ if(dismissScentHighlight(performance.now()))return;
+ const ruinsAction=ruinsInteraction();
+ if(ruinsAction){useRuinsInteraction(ruinsAction);return;}
+ const landmark=approachLandmark() || woodsLandmark() || groveLandmark();
  const interaction=millAction();
- const drop=nearbyMillDrop() || nearbyBossPotion();
+ const drop=nearbyRoomDrop() || nearbyBossPotion();
  if(drop){
   const owned=inventory.get(drop.item.id);
   if(!owned && inventory.size>=16){showInfo('Inventory full');return;}
   if(drop.item===emperorNote){readEmperorNote('floor');return;}
+  if(woods) woodsPotion=null;
+  else if(sluiceRoom) bossPotions.splice(bossPotions.indexOf(drop),1);
+  else if(millVault) millDrop.vaultPotion=null;
+  else millDrop.potion=null;
   document.dispatchEvent(new CustomEvent('game:inventory-change',{
    detail:{...potion,value:(owned?.value??0)+1}
   }));
-  if(sluiceRoom) bossPotions.splice(bossPotions.indexOf(drop),1);
-  else if(millVault) millDrop.vaultPotion=null;
-  else millDrop.potion=null;
   presentAcquisition(potion.id,'Potion obtained');
   return;
  }
@@ -2653,10 +3609,61 @@ function startPunch(){
   return;
  }
  if(interaction==='Iron Grate'){showInfo('There must be a lever nearby.');return;}
- if(landmark){
-  showInfo(landmark==='Service Gate'?'Latched from the mill side':landmark);
+ if(landmark==='Use Scent at Gate'){
+  westTrailRevealed=true;
+  startScentHighlight(westScent,performance.now());
+  queueStorySave();
+  playPickupSound([329,494],.04,.19);
+  showInfo('The scent leads back to the South Gate.');
+  draw(eyesClosed);
   return;
  }
+ if(landmark==='Hidden Gate Release'){
+  westGateOpen=true;
+  queueStorySave();
+  playAttackSound('crack');
+  playPickupSound([440,660]);
+  showInfo('The west gate opens.');
+  draw(eyesClosed);
+  return;
+ }
+ if(landmark==='Village Gate'){
+  showInfo(scentUnlocked?'The trail is cold.':'The latch is hidden. How do I find it?');
+  return;
+ }
+ if(landmark==='Use Scent on Trail'){
+  woodsTrailRevealed=true;
+  startScentHighlight(woodsScent,performance.now());
+  queueStorySave();
+  playPickupSound([329,494],.04,.19);
+  showInfo('A scent leads to the hollow stump.');
+  draw(eyesClosed);
+  return;
+ }
+ if(landmark==='Wounded Werewolf'){advanceGroveDialogue();return;}
+ if(landmark==='Werewolf Den'){showInfo('The blood trail ends here.');return;}
+ if(landmark==='Stone Dagger'){
+  if(inventory.size>=16){showInfo('Inventory full');return;}
+  stoneDaggerFound=true;
+  document.dispatchEvent(new CustomEvent('game:inventory-change',{detail:stoneDagger}));
+  presentAcquisition(stoneDagger.id,'Stone Dagger obtained',readStoneDagger);
+  draw(eyesClosed);
+  return;
+ }
+ if(landmark==='Service Gate'){
+  if(playerY<=serviceGate.bottom){
+   showInfo('The latch is on the other side.');
+  }else{
+   serviceGateOpen=true;
+   queueStorySave();
+   unlockEffects();
+   playPickupSound([440,660]);
+   showInfo('Service gate unlocked');
+   draw(eyesClosed);
+  }
+  return;
+ }
+ if(landmark){showInfo(landmark);return;}
  if(gateInReach()){
   gateOpen=true;
   queueStorySave();
@@ -2678,7 +3685,7 @@ function startPunch(){
   return;
  }
  const object=objectAt(playerX,playerY,true);
- if(object && object!==crate && !grainCrates.includes(object) && !storageCrates.includes(object)){
+ if(object && object!==crate && object!==gemTree && !grainCrates.includes(object) && !storageCrates.includes(object)){
   document.dispatchEvent(new CustomEvent('game:object-interact',{detail:{id:object.id}}));
   return;
  }
@@ -2687,12 +3694,16 @@ function startPunch(){
   if(!attack) return;
   unlockEffects();
   jabFrame=1;
+  stoneSwipeAt=performance.now();
   draw(eyesClosed);
   jabTimer=setTimeout(()=>{
    jabFrame=2;
    playAttackSound('swipe');
    if(equippedItem==='grass-bow') releaseArrow(attack.reach);
-   else damageInReach(attack.reach);
+   else{
+    const target=damageInReach(attack.reach);
+    if(equippedItem===stoneDagger.id)releaseStoneWave(target);
+   }
    draw(eyesClosed);
    jabTimer=setTimeout(()=>{endPunch();draw(eyesClosed);},attack.recovery);
   },attack.windup);
@@ -2719,18 +3730,19 @@ jumpButton.addEventListener('click',event=>{
 });
 function startJump(){
  if(raisedItem || drowningAt!==null || bossControlsLocked()) return;
- if(readingNote){closeEmperorNote();return;}
+ if(readingNote){closeReading();return;}
  if(shopStep!==null){
   showShopDialogue(shopStep==='buy' || shopStep==='sell'?'choice':null);
   draw(eyesClosed);
   return;
  }
  if(screen==='inventory' || screen==='stats'){
-  if(pendingEquip){pendingEquip=null;renderInventory();}
+  if(pendingInventoryAction){pendingInventoryAction=null;renderInventory();}
   else setScreen('play');
   return;
  }
- if(screen!=='play' || discoveryOpen || wolfFinalWordsPending || wolfLine>=0 || jump || chestLid || changingRoom) return;
+ if(screen!=='play' || discoveryOpen || wolfFinalWordsPending || wolfLine>=0 || chestLid || changingRoom) return;
+ if(jump){startPounce();return;}
  restFeet();
  const direction=heldDirection??Array.from(heldKeys).at(-1);
  jump={elapsed:0,height:standingHeight,launchHeight:standingHeight,direction,fromDpad:heldDirection!==null,distance:0,safeX:playerX,safeY:playerY};
@@ -2741,18 +3753,41 @@ function resumeJump(){
  lastJumpFrame=null;
  jumpFrame=requestAnimationFrame(advanceJump);
 }
+function queuePounceDive(){
+ if(jump.diveRequested)return;
+ jump.diveRequested=true;
+ jump.diveWeapon=inventory.get(equippedItem)?.weaponClass??null;
+ jump.direction??=facing;
+ endPunch();
+}
+function finishPounceDive(landing){
+ if(!landing.dive || !landing.diveWeapon || !landing.direction || discoveryOpen || changingRoom)return;
+ pounceStrike={x:playerX,y:playerY-standingHeight-8,at:performance.now(),
+  direction:landing.direction,weapon:landing.diveWeapon};
+ playAttackSound('swipe');
+ damageInReach(14,1.5,landing.direction);
+}
 function advanceJump(now){
  if(lastJumpFrame!==null) jump.elapsed+=now-lastJumpFrame;
  lastJumpFrame=now;
- const progress=Math.min(1,jump.elapsed/jumpDuration);
+ if(jump.diveRequested && !jump.dive && (jump.height>=7 || jump.elapsed>=675)){
+  jump.dive={elapsed:jump.elapsed,height:jump.height,distance:jump.distance};
+ }
+ const dive=jump.dive;
+ const duration=dive?Math.max(90,Math.round(dive.height*8)):jump.pounce?850:jumpDuration;
+ const peak=jump.pounce?21:jumpPeak;
+ const progress=Math.min(1,(jump.elapsed-(dive?.elapsed??0))/duration);
  const previousHeight=jump.height;
- jump.height=4*jumpPeak*progress*(1-progress)+jump.launchHeight*(1-progress);
+ jump.height=dive?dive.height*(1-progress**1.35):
+  4*peak*progress*(1-progress)+jump.launchHeight*(1-progress);
  const platform=platformAt(playerX,playerY);
  if(platform && previousHeight>=platform.height && jump.height<platform.height){
   playerX=platform.x+platform.width/2;
   playerY=platform.seatY+platform.height;
   standingHeight=platform.height;
+  const landing=jump;
   jump=null;
+  finishPounceDive(landing);
   draw(eyesClosed);
   return;
  }
@@ -2761,7 +3796,8 @@ function advanceJump(now){
   playerX=jump.safeX;
   playerY=jump.safeY;
  }
- const distance=Math.floor(progress*jumpDuration*2/55);
+ const distance=dive?dive.distance+Math.floor(progress*dive.height*.55):
+  Math.floor(progress*duration*2/(jump.pounce?27:55));
  if(jump.direction){
   while(jump.distance<distance){
    jump.distance++;
@@ -2770,28 +3806,52 @@ function advanceJump(now){
   }
  }
  if(progress===1){
+  const landing=jump;
   standingHeight=0;jump=null;
+  const landed=!ruinsInterior || finishRuinsLanding(landing);
   checkSluiceFooting();
-  if(drowningAt===null) collectGem();
+  if(drowningAt===null){
+   if(landed)finishPounceDive(landing);
+   collectGem();
+  }
  }
  else jumpFrame=requestAnimationFrame(advanceJump);
  draw(eyesClosed);
 }
 function walkIntoDoor(x,y,dx,dy){
+ const inRuinsDoor=x>=74 && x<=86;
+ if(ruinsInterior){
+  if(inRuinsDoor && dy<0 && y<=48){
+   if(!ruinsDoorOpen()){
+    const clue=ruinsDoorClue();
+    if(infoMessage!==clue) showInfo(clue);
+   }else if(ruinsInterior<23)changeRoad('ruins-'+(ruinsInterior+1));
+   else useRuinsInteraction({type:'vista'});
+   return true;
+  }
+  if(inRuinsDoor && dy>0 && y>=walkBottomY){
+   changeRoad(ruinsInterior===19?'ruins-approach-from-inside':'ruins-'+(ruinsInterior-1));return true;
+  }
+  return false;
+ }
  let destination;
  if(dx<0 && x<=walkMinX){
   if(millStorage && y>=110 && y<=122) destination='mill-press-from-storage';
   else if(millEntry && y>=96 && y<=108) destination='mill-exit';
   else if(sluiceRoom && y>=96 && y<=108) destination='mill-storage-from-sluice';
+  else if(millApproach && westGateOpen && y>=92 && y<=106) destination='woods-edge';
+  else if(woods && y>=grovePath.top && y<=grovePath.bottom) destination='wolf-grove';
  }else if(dx>0 && x>=walkMaxX){
   if(millPress && y>=110 && y<=122) destination='mill-storage';
   else if(millApproach && y>=91 && y<=107) destination='mill-entry';
+  else if(woods && y>=92 && y<=106) destination='mill-approach-from-woods';
+  else if(wolfGrove && y>=grovePath.top && y<=grovePath.bottom) destination='woods-from-grove';
  }else if(dy<0){
-  if(millStorage && storageStairsOpen && y===storageStairLip && x>=72 && x<=87) destination='mill';
-  else if(sluiceRoom && scentUnlocked && y===shortcutStairLip && x>=121 && x<=137){
-   endDemo();
-   return true;
-  }
+  if(ruinsApproach && ruinsOpen && inRuinsDoor && y<=40)destination='ruins-19';
+  else if(woods && x>=74 && x<=86 && y<=woodsNorthTrail.walkTop && stoneDaggerFound)destination='ruins-approach';
+  else if(millStorage && storageStairsOpen && y===storageStairLip && x>=72 && x<=87) destination='mill';
+  else if(sluiceRoom && scentUnlocked && y===shortcutStairLip && x>=121 && x<=137)
+   destination='mill-approach-shortcut';
   else if(millApproach && x>=115 && x<=123 && y===77) destination='mill-shop';
   else if(millEntry && millGateOpen && x>=71 && x<=89 && y===49) destination='mill-grain';
   else if(millGrain && x>=114 && x<=134 && y===outdoorWalkTop) destination='mill-press';
@@ -2799,13 +3859,17 @@ function walkIntoDoor(x,y,dx,dy){
    if(millPress && x>=70 && x<=89) destination='mill-vault';
    else if(millApproach && x>=67 && x<=92) destination='ditch-south';
    else if(ditch && x>=67 && x<=92) destination='yard';
-   else if(yard && !inMill && !inShop && !millApproach && !ditch && x>=72 && x<=87){
+   else if(yard && !woods && !wolfGrove && !ruinsApproach && !inMill && !inShop && !millApproach && !ditch && x>=72 && x<=87){
     changeRoom();
     return true;
    }
   }
+ }else if(dy>0 && millApproach && sluiceShortcutOpened && y===134 && x>=122 && x<=133 &&
+  performance.now()-shortcutRockMovedAt>=shortcutRockSlideTime){
+  destination='mill-from-town';
  }else if(dy>0 && y>=walkBottomY){
-  if(millVault && x>=72 && x<=87) destination='mill-press-from-vault';
+  if(ruinsApproach && x>=72 && x<=87)destination='woods-from-ruins';
+  else if(millVault && x>=72 && x<=87) destination='mill-press-from-vault';
   else if(millPress && x>=72 && x<=87) destination='mill-grain-from-press';
   else if(millGrain && x>=71 && x<=88) destination='mill-entry-from-grain';
   else if(inShop && x>=71 && x<=88) destination='shop-exit';
@@ -2820,16 +3884,34 @@ function walkIntoDoor(x,y,dx,dy){
  changeRoad(destination);
  return true;
 }
+function lookBackTowardWoods(){
+ const now=performance.now();
+ if(woodsCallThought.shownAt!==null && now-woodsCallThought.shownAt<4000)return;
+ woodsCallThought.shownAt=null;
+ woodsCallThought.readyAt=now;
+ woodsLookBackUntil=now+1450;
+ travelerThought.hidden=true;
+ stopKeyboardWalk();
+ stop();
+}
 function move(direction,airborne=false){
  if(raisedItem || readingNote || drowningAt!==null || bossControlsLocked()) return;
  if(shopStep!==null){
-  if(shopStep==='buy' && !airborne && (direction==='ArrowDown' || direction==='ArrowUp')){
-   stockCursor=(stockCursor+(direction==='ArrowDown'?1:shopItems.length-1))%shopItems.length;
-   renderShopStock();
+  if((shopStep==='buy' || shopStep==='sell') && !airborne && (direction==='ArrowDown' || direction==='ArrowUp')){
+   const length=getShopStock().length;
+   if(length>1){
+    stockCursor=(stockCursor+(direction==='ArrowDown'?1:length-1))%length;
+    playPickupSound([540],.022,.044);
+    renderShopStock();
+   }
   }
   if(shopStep==='choice' && !airborne){
-   shopChoice=(direction==='ArrowRight' || direction==='ArrowDown')?1:0;
-   showShopDialogue('choice');
+   const next=(direction==='ArrowRight' || direction==='ArrowDown')?1:0;
+   if(next!==shopChoice){
+    shopChoice=next;
+    playPickupSound([540],.022,.044);
+    showShopDialogue('choice');
+   }
   }
   return;
  }
@@ -2846,20 +3928,28 @@ function move(direction,airborne=false){
  }
  const [dx,dy]=directions.get(direction);
  const x=playerX+dx, y=playerY+dy;
+ if(woods && !stoneDaggerFound && dy<0 && y<outdoorWalkTop-8){
+  if(x>=74 && x<=86)lookBackTowardWoods();
+  return;
+ }
  if(!jump && standingHeight===0 && walkIntoDoor(x,y,dx,dy)) return;
  if(millStorage && storageStairsOpen && x>=72 && x<=87 && y>=89 && y<storageStairLip) return;
  if(sluiceRoom && scentUnlocked && x>=121 && x<=137 && y>=110 && y<shortcutStairLip) return;
  if(millEntry && y<53 && (x<69 || x>91 || !millGateOpen)) return;
  if(sluiceRoom && overSluiceWater(x) && y<sluiceChannel.top) return;
  if(ditch && y>=109 && y<=126 && (!bridgeBuilt || x<72 || x>87)) return;
- if(x<walkMinX || x>walkMaxX || y<(yard?outdoorWalkTop:65) || y>walkBottomY) return;
- if(objectAt(x,y)) return;
+ const onNorthTrail=woods && x>=woodsNorthTrail.left+2 && x<woodsNorthTrail.right-1;
+ const walkTop=onNorthTrail?woodsNorthTrail.walkTop:ruinsApproach?39:yard?outdoorWalkTop:65;
+ if(x<walkMinX || x>walkMaxX || y<walkTop || y>walkBottomY) return;
+ if(ruinsInterior && (y<49 || blocksRuinsStep(x,y)))return;
+ if(ruinsApproach && y<60 && (x<72 || x>88 || !ruinsOpen))return;
+ if(objectAt(x,y) && !pushRuinsStatue(x,y,dx))return;
  playerX=x;
  playerY=y;
  checkPressContact();
  if(changingRoom) return;
  if(jump){
-  if(!objectAt(x,y,false,0)){
+  if(ruinsFloor(x,y) && !objectAt(x,y,false,0)){
    jump.safeX=x;
    jump.safeY=y;
   }
@@ -2871,10 +3961,11 @@ function move(direction,airborne=false){
  if(drowningAt!==null) return;
  checkSpiderContact();
  if(changingRoom) return;
+ checkRuinsFooting();
  collectGem();
  const now=performance.now();
  if(now>=nextFootstep){
-  playAttackSound(yard && !inShop && !inMill?'gravel':'step');
+  playAttackSound(yard && !inShop && !inMill && !ruinsInterior?'gravel':'step');
   nextFootstep=now+310;
  }
  stride=Math.floor(steps++/3)%2===0?1:-1;
@@ -2910,7 +4001,7 @@ document.addEventListener('keydown',event=>{
 document.addEventListener('keyup',event=>{
  heldKeys.delete(event.key);
  if(!heldKeys.size) stopKeyboardWalk();
- if(jump && !jump.fromDpad && jump.direction===event.key) jump.direction=null;
+ if(jump && !jump.pounce && !jump.fromDpad && jump.direction===event.key) jump.direction=null;
 });
 const dpad=document.querySelector('.dpad');
 const directionButtons=new Map(Array.from(dpad.querySelectorAll('button'),button=>[button.dataset.direction,button]));
@@ -2927,7 +4018,7 @@ function stopKeyboardWalk(){
  keyboardWalkTimer=undefined;
 }
 function stop(){
- if(jump?.fromDpad) jump.direction=null;
+ if(jump?.fromDpad && !jump.pounce) jump.direction=null;
  clearInterval(repeat);
  heldPointer=null;
  setHeldDirection(null);
@@ -2977,13 +4068,6 @@ window.addEventListener('blur',()=>{
  stop();
 });
 const openingScreen=document.querySelector('#opening-screen');
-const endingScreen=document.querySelector('#ending-screen');
-function endDemo(){
- demoCompleted=true;
- queueStorySave();
- setScreen('ending');
- endingScreen.hidden=false;
-}
 function beginGame(resume=true){
  if(screen!=='title' || newGameDialog.open) return;
  if(!testStart && resume && storySave) restoreStorySave(storySave);
@@ -3102,6 +4186,8 @@ function setScreen(next){
  if(raisedItem || drowningAt!==null || bossControlsLocked() || changingRoom || shopStep!==null || discoveryOpen || wolfFinalWordsPending || wolfLine>=0) return;
  const wasPlaying=screen==='play';
  sluiceLastFrame=null;
+ woodsBoarFrame=null;
+ ruinsFrame=null;
  screen=next;
  if(next!=='play') travelerThought.hidden=true;
  if(next!=='inventory') hideEquipNotice();
@@ -3109,7 +4195,7 @@ function setScreen(next){
   chestLid=0;
   chestNotice='';
  }
- pendingEquip=null;
+ pendingInventoryAction=null;
  pauseScreen.hidden=screen!=='pause';
  inventoryScreen.hidden=screen!=='inventory' && screen!=='stats';
  inventoryPanel.hidden=screen!=='inventory';
@@ -3140,6 +4226,8 @@ function setScreen(next){
 }
 function pressStart(){
  if(screen==='title'){beginGame();return;}
+ if(screen==='inventory' && !chestLid && !pendingInventoryAction && !readingNote &&
+  Array.from(inventory.keys())[inventoryCursor]===stoneDagger.id){readStoneDagger();return;}
  if(!chestLid && (screen==='play' || screen==='pause')) setScreen(screen==='play'?'pause':'play');
 }
 startButton.addEventListener('click',pressStart);
@@ -3159,9 +4247,8 @@ function pressSelect(){
 selectButton.addEventListener('click',pressSelect);
 
 const inventory=new Map();
-const equipment=new Map();
 const equipmentFields=new Map(Array.from(document.querySelectorAll('[data-equipment-slot]'),field=>[field.dataset.equipmentSlot,field]));
-let pendingEquip=null;
+let pendingInventoryAction=null;
 const stats=new Map([
  ['str',{label:'STR',value:10}],
  ['def',{label:'DEF',value:10}]
@@ -3219,7 +4306,7 @@ function moveInventory(direction){
  if(next===inventoryCursor) return;
  inventoryCursor=next;
  chestNotice="";
- pendingEquip=null;
+ pendingInventoryAction=null;
  renderInventory();
 }
 function renderItemGrid(grid,items,active){
@@ -3245,6 +4332,23 @@ function renderItemGrid(grid,items,active){
   grid.append(cell);
  }
 }
+function gearBonus(field,loadout=equipment){
+ return Array.from(loadout.values()).reduce((sum,id)=>sum+(inventory.get(id)?.[field]??0),0);
+}
+function equipmentPreview(id,item){
+ const next=new Map(equipment);
+ const current=next.get(item.slot);
+ if(current===id)next.delete(item.slot);
+ else next.set(item.slot,id);
+ const comparison=[['strBonus','STR'],['defBonus','DEF']].map(([field,label])=>{
+  if(item[field]===undefined&&inventory.get(current)?.[field]===undefined)return '';
+  const base=stats.get(label.toLowerCase())?.value??10;
+  return label+' '+(base+gearBonus(field))+' → '+(base+gearBonus(field,next));
+ }).filter(Boolean);
+ const displaced=current!==id?inventory.get(current)?.label:null;
+ if(displaced)comparison.push('Replaces '+displaced);
+ return comparison.join(' · ');
+}
 function renderInventory(){
  const storage=chestLid!==0;
  const pack=Array.from(inventory.entries());
@@ -3265,18 +4369,25 @@ function renderInventory(){
  itemInfo.textContent=chestNotice;
  if(!entry || chestNotice) return;
  const [id,{value,description,strBonus,defBonus,slot,label}]=entry;
- if(pendingEquip===id){
+ if(pendingInventoryAction===id && id===potion.id){
+  itemInfo.textContent='Use a potion? '+actionKey('A')+' Confirm · '+actionKey('B')+' Cancel';
+  return;
+ }
+ if(pendingInventoryAction===id){
   itemInfo.textContent='Replace '+inventory.get(equipment.get(slot)).label+' with '+label+'? Press '+actionKey('A')+' to Confirm';
   return;
  }
  const bonus=[strBonus===undefined?'':(strBonus>=0?'+':'')+strBonus+' STR',defBonus===undefined?'':(defBonus>=0?'+':'')+defBonus+' DEF'].filter(Boolean).join(' · ');
  const attribute=id==='dagger'?'Weapon':id==='gems'?'Quantity: '+value:'';
- itemInfo.textContent=[description,attribute,bonus].filter(Boolean).join(' · ');
+ const effects=slot&&!storage?equipmentPreview(id,{slot,strBonus,defBonus}):bonus;
+ itemInfo.textContent=[description,attribute,effects].filter(Boolean).join(' · ');
+ if(id===glyphFragment.id && !chestLid) return;
  const prompt=document.createElement('span');
  prompt.className='inventory-item-detail';
  const press='Press '+actionKey('A')+' to ';
  prompt.textContent=chestLid?press+(chestView?'Take':'Store'):slot?press+(equipment.get(slot)===id?'Unequip':'Equip'):
   id===woodenPlank.id?'Use at the washout':press+(id===emperorNote.id?'Read':'Use');
+ if(id===stoneDagger.id && !chestLid)prompt.textContent+=' · '+actionKey('Start')+': Read engraving';
  itemInfo.append(prompt);
 }
 function transferChestItem(){
@@ -3306,16 +4417,25 @@ function inventoryAction(){
  const entry=Array.from(inventory.entries())[inventoryCursor];
  if(!entry) return;
  const [id,item]=entry;
- if(id===woodenPlank.id) return;
+ if(id===woodenPlank.id || id===glyphFragment.id) return;
  if(id===emperorNote.id){readEmperorNote('inventory');return;}
- if(id==='potion'){
-  const restored=missingHp>0;
+ if(id===potion.id){
+  if(pendingInventoryAction!==id){
+   pendingInventoryAction=id;
+   renderInventory();
+   return;
+  }
+  pendingInventoryAction=null;
+  if(missingHp===0){
+   itemInfo.textContent='Life is already full';
+   return;
+  }
   missingHp=Math.max(0,missingHp-hpPerStar);
   document.dispatchEvent(new CustomEvent('game:inventory-change',{
    detail:{id,label:item.label,value:item.value===1?null:item.value-1}
   }));
   unlockEffects();playPickupSound([440,660,880]);
-  itemInfo.textContent=restored?'Life restored':'Potion used';
+  itemInfo.textContent='Life restored';
   return;
  }
  if(!item.slot){
@@ -3324,15 +4444,15 @@ function inventoryAction(){
  }
  const current=equipment.get(item.slot);
  const equipping=current!==id;
- if(equipping && current && pendingEquip!==id){
-  pendingEquip=id;
+ if(equipping && current && pendingInventoryAction!==id){
+  pendingInventoryAction=id;
   renderInventory();
   return;
  }
  if(equipping) equipment.set(item.slot,id);
  else equipment.delete(item.slot);
  showEquipNotice(item.label,equipping);
- pendingEquip=null;
+ pendingInventoryAction=null;
  if(item.slot==='weapon'){
   document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:equipping?id:null}}));
  }
@@ -3344,7 +4464,7 @@ document.addEventListener('game:inventory-change',event=>{
  const {id,value}=event.detail??{};
  if(value!==null && !inventory.has(id) && inventory.size>=16) return;
  if(!updateField(inventory,event)) return;
- pendingEquip=null;
+ pendingInventoryAction=null;
  if(value===null){
   for(const [slot,equipped] of equipment){
    if(equipped!==id) continue;
@@ -3357,17 +4477,19 @@ document.addEventListener('game:inventory-change',event=>{
  queueStorySave();
 });
 function renderStats(){
- skillsPanel.hidden=!scentUnlocked;
+ skillsPanel.hidden=!scentUnlocked && !ruinsState.pounce;
+ scentSkill.hidden=!scentUnlocked;
+ document.querySelector('#pounce-description').hidden=!ruinsState.pounce;
  highlightScent(false);
  statFields.replaceChildren();
  armorEquipped=equipment.get('body')===strawArmor.id;
  helmetEquipped=equipment.get('head')===strawHelmet.id;
- const defenseBonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.defBonus??0),0);
+ const defenseBonus=gearBonus('defBonus');
  hpPerStar=Math.max(1,baseHpPerStar+defenseBonus);
  const hpLabel=document.createElement('dt'),hpValue=document.createElement('dd');
  hpLabel.textContent='HP';hpValue.textContent=currentHp()+' / '+maxHp();
  statFields.append(hpLabel,hpValue);
- const bonus=Array.from(equipment.values()).reduce((sum,id)=>sum+(inventory.get(id)?.strBonus??0),0);
+ const bonus=gearBonus('strBonus');
  for(const [id,{label,value}] of stats){
   const name=document.createElement('dt');
   const field=document.createElement('dd');
@@ -3393,16 +4515,21 @@ function renderStats(){
 }
 const storySaveKey='the-inn.story-begins.save.v1';
 const storyRooms={
+ ...ruinsRoomKeys,
  inn:'inn',yard:'yard-checkpoint',ditch:'ditch-north','mill-approach':'mill-approach','mill-shop':'mill-shop',
  'mill-entry':'mill-entry','mill-grain':'mill-grain','mill-press':'mill-press','mill-vault':'mill-vault',
- 'mill-storage':'mill-storage',mill:'mill'
+ 'mill-storage':'mill-storage',mill:'mill','mill-approach-shortcut':'mill-approach-shortcut','woods-edge':'woods-edge','wolf-grove':'wolf-grove','ruins-approach':'ruins-approach'
 };
 const itemCatalog=new Map(
- [daggerItem,woodenPlank,strawArmor,strawHelmet,emperorNote,...shopItems].map(item=>[item.id,item])
+ [daggerItem,stoneDagger,woodenPlank,strawArmor,strawHelmet,emperorNote,glyphFragment,...ruinsGear,...shopItems].map(item=>[item.id,item])
 );
 const saveNotice=document.querySelector('#save-notice');
-let storySave=null,saveQueued=false,saveBlocked=false,demoCompleted=false;
+let storySave=null,saveQueued=false,saveBlocked=false;
 function checkpointRoom(){
+ if(ruinsInterior)return 'ruins-'+ruinsInterior;
+ if(woods) return 'woods-edge';
+ if(wolfGrove) return 'wolf-grove';
+ if(ruinsApproach) return 'ruins-approach';
  if(millEntry) return 'mill-entry';
  if(millGrain) return 'mill-grain';
  if(millPress) return 'mill-press';
@@ -3410,7 +4537,8 @@ function checkpointRoom(){
  if(millStorage) return 'mill-storage';
  if(sluiceRoom) return 'mill';
  if(inShop) return 'mill-shop';
- if(millApproach) return 'mill-approach';
+ if(millApproach) return sluiceShortcutOpened && !serviceGateOpen && playerY>serviceGate.bottom &&
+  playerX>115 && playerX<145?'mill-approach-shortcut':'mill-approach';
  if(ditch) return 'ditch';
  return yard?'yard':'inn';
 }
@@ -3454,8 +4582,9 @@ function makeStorySave(){
    vaultProgress,vaultChestOpen:vaultChest.open,
    storageCrates:storageCrates.map(box=>[box.hp===0,box.reward]),
    storageDrops:storageDrops.filter(drop=>drop.available).map(drop=>({...pointForSave(drop),reward:drop.reward})),
-   storageStairsOpen,bossDefeated:boss.phase==='defeated',scentUnlocked,demoCompleted,
-   bossPotions:boss.phase==='defeated'?bossPotions.map(pointForSave):[]
+   storageStairsOpen,bossDefeated:boss.phase==='defeated',scentUnlocked,sluiceShortcutOpened,serviceGateOpen,westTrailRevealed,westGateOpen,stoneDaggerFound,groveWolfDead,ruinsWolfX:ruinsWolf.x,ruinsManX:ruinsMan.x,ruinsOpen,woodsBoarDefeated:woodsBoar.hp===0,
+   woodsTrailRevealed,woodsPotion:pointForSave(woodsPotion),gemTreeHits:treeGemDrops.length-gemTree.hp,
+   ruins:ruinsProgress(),gemTreeDrops:treeGemDrops.map(gem=>gem.available),bossPotions:boss.phase==='defeated'?bossPotions.map(pointForSave):[]
   }
  };
 }
@@ -3511,6 +4640,7 @@ function restoreDefeated(list,saved){
 }
 function restoreStorySave(save){
  const progress=save.progress;
+ restoreRuinsProgress(progress.ruins,ruinsRoomNumber(save.room));
  lifeStars=integer(save.lifeStars,1,10,1);
  missingHp=integer(save.missingHp,0,10000);
  gems=integer(save.gems,0,999999);
@@ -3583,13 +4713,34 @@ function restoreStorySave(save){
    }
   }
  }
- demoCompleted=progress.demoCompleted===true;
- enterRoad(storyRooms[save.room]);
+ const completedOldDemo=progress.demoCompleted===true;
+ sluiceShortcutOpened=scentUnlocked && (progress.sluiceShortcutOpened===true || completedOldDemo);
+ serviceGateOpen=sluiceShortcutOpened && progress.serviceGateOpen===true;
+ westTrailRevealed=sluiceShortcutOpened && progress.westTrailRevealed===true;
+ westGateOpen=westTrailRevealed && progress.westGateOpen===true;
+ groveWolfDead=progress.groveWolfDead===true;
+ ruinsOpen=progress.ruinsOpen===true;
+ ruinsWolf.x=ruinsOpen?ruinsWolfCenter:Math.min(ruinsWolfCenter,integer(progress.ruinsWolfX,27,81,ruinsWolfStart));
+ ruinsMan.x=ruinsOpen?ruinsManCenter:integer(progress.ruinsManX,ruinsManCenter,123,ruinsManStart);
+ stoneDaggerFound=progress.stoneDaggerFound===true || inventory.has(stoneDagger.id) || chestItems.has(stoneDagger.id);
+ woodsTrailRevealed=scentUnlocked && progress.woodsTrailRevealed===true;
+ if(progress.woodsBoarDefeated===true){
+  woodsBoar.hp=0;
+  woodsPotion=restoreDrop(progress.woodsPotion,potion);
+ }
+ const treeHits=integer(progress.gemTreeHits,0,treeGemDrops.length);
+ gemTree.hp=treeGemDrops.length-treeHits;
+ if(Array.isArray(progress.gemTreeDrops)){
+  for(let i=0;i<treeHits;i++)treeGemDrops[i].available=progress.gemTreeDrops[i]===true;
+ }
+ enterRoad(completedOldDemo && save.room==='mill'?'mill-approach-shortcut':storyRooms[save.room]);
  if(yard && !gateOpen && !ditch) yardThought.readyAt=performance.now()+1000;
  document.querySelector('#inventory-gems').textContent=gems;
  renderStats();
 }
 function refreshInputHints(){
+ document.querySelector('#pounce-description').textContent='Pounce · '+pounceControls()+' Press '+actionKey('B')+
+  ' a third time to dive and swipe with your equipped weapon at 150% STR.';
  document.documentElement.setAttribute('data-input',inputMode);
  document.querySelector('#opening-hint').hidden=!desktopControls && inputMode!=='keyboard';
  openingStart.textContent=storySave && !testStart?'Continue':'Press ‘'+actionKey('A')+'’ To Start';
@@ -3617,9 +4768,39 @@ if(testStart){
  equipment.set(grassBow.slot,grassBow.id);
  document.dispatchEvent(new CustomEvent('game:equipment-change',{detail:{item:grassBow.id}}));
 }
+if(testWoods || testRoom==='17' || testRoom==='18' || testRuinsInterior){
+ scentUnlocked=true;
+ westTrailRevealed=true;
+ westGateOpen=true;
+ sluiceShortcutOpened=true;
+ serviceGateOpen=true;
+ bridgeBuilt=true;
+ wolf.hp=0;
+ boss.hp=0;
+ boss.phase='defeated';
+ if(testRoom==='18' || testRuinsInterior){
+  stoneDaggerFound=true;
+  inventory.set(stoneDagger.id,{...stoneDagger});
+ }
+ if(testRuinsInterior){
+  ruinsOpen=true;ruinsWolf.x=ruinsWolfCenter;ruinsMan.x=ruinsManCenter;
+  restoreRuinsProgress(null,testRuinsInterior);
+ }
+ enterRoad(testStart);
+}
+if(testAfterBoss){
+ boss.phase='defeated';
+ boss.hp=0;
+ playerX=129;
+ playerY=97;
+ facing='ArrowUp';
+ storageCrates.forEach(crate=>{crate.hp=0;});
+ storageStairsOpen=true;
+}
 renderStats();
 if(desktopControls) document.documentElement.setAttribute('data-desktop-controls','');
 refreshInputHints();
+if(testAfterBoss || testWoods || testRoom==='17' || testRoom==='18' || testRuinsInterior) beginGame(false);
 document.addEventListener('game:stat-change',event=>{
  if(updateField(stats,event)) renderStats();
 });
