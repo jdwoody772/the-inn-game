@@ -53,3 +53,6 @@ Luca progresses toward the Emperor's palace entrance. Before confronting the Emp
 4. Tie new puzzles to narrative or character development wherever possible.
 5. Treat tentative wording as editable, but preserve the underlying facts and reveal order.
 6. If code contradicts this reference, flag the discrepancy rather than silently rewriting canon.
+
+## Visual and gameplay reference — The Legend of Zelda: A Link to the Past
+Use *The Legend of Zelda: A Link to the Past* (SNES) as a major reference point for visual presentation, readable top-down environments, exploration, puzzle design, combat pacing, and environmental storytelling. Study how its world layout, secrets, landmarks, and dungeon progression make discovery feel rewarding. Apply those principles to *The Inn* while respecting its Game Boy-style technical and visual constraints, existing mechanics, original characters, and darker werewolf-revenge narrative. This is inspiration, not a request to copy Nintendo's art, maps, characters, music, or exact puzzles.
