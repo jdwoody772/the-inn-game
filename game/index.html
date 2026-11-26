@@ -1493,24 +1493,27 @@ function drawTraveler(blink){
  ctx.save();
  ctx.translate(playerX-80,playerY-105);
  const body=equipment.get('body');
+ const lookingBack=!raisedItem && facing==='ArrowUp' && woods && performance.now()<woodsLookBackUntil;
  if(raisedItem){
   drawFront(blink,body);
   drawFeet();
-  drawRaisedItem(raisedItem.id);
  }else if(facing==='ArrowLeft' || facing==='ArrowRight'){
+  ctx.save();
   if(facing==='ArrowLeft'){
    ctx.translate(160,0);
    ctx.scale(-1,1);
   }
   drawProfile(blink,body,facing);
+  ctx.restore();
  }else{
-  if(facing==='ArrowUp') drawBack(blink,woods && performance.now()<woodsLookBackUntil,body);
+  if(facing==='ArrowUp') drawBack(blink,lookingBack,body);
   else drawFront(blink,body);
   drawFeet();
  }
- ctx.restore();
- if(helmetEquipped) drawStrawHelmet(ctx,playerX-7,playerY-23,facing);
  const gearFacing=raisedItem?'ArrowDown':facing;
+ if(helmetEquipped) drawStrawHelmet(ctx,73,81,lookingBack?'ArrowLeft':gearFacing);
+ if(raisedItem) drawRaisedItem(raisedItem.id);
+ ctx.restore();
  if(equipment.get('head')===stoneHelm.id) drawEquippedStoneHelm(playerX,playerY,gearFacing);
  if(equipment.get('shield')===stoneShield.id && !raisedItem) drawEquippedStoneShield(playerX,playerY,gearFacing);
  if(punching && (facing==='ArrowLeft' || facing==='ArrowRight')) drawPunch();
@@ -2862,70 +2865,60 @@ function armorIcon(){
  drawStrawArmor(icon.getContext('2d'),0,0);
  return icon;
 }
+const strawHelmetProfile=[
+ '....000000....',
+ '..0023322100..',
+ '.023223221210.',
+ '.0323232121210',
+ '02323232212110',
+ '03232322121210',
+ '01111111111100',
+ '01223222110...',
+ '012323210.....',
+ '.01223210.....',
+ '.01232310.....',
+ '..012310......',
+ '...0110.......',
+ '....00........',
+];
 const helmetSprites={
  ArrowDown:[
-  '...00000000...',
-  '..0122122100..',
-  '.012122122210.',
-  '01221221212210',
-  '01212212212210',
-  '01221221221210',
+  '....000000....',
+  '..0023323300..',
+  '.023223322320.',
+  '.0323322332210',
+  '02332332323210',
+  '03233233232310',
+  '01222222222210',
   '00111111111100',
-  '0210...0..0120',
-  '0120...0..0210',
-  '0210...0..0120',
-  '0120......0210',
-  '.010......010.',
-  '..00......00..',
+  '.0120....0210.',
+  '.012......210.',
+  '.01210..01210.',
+  '..0210..0120..',
+  '..010....010..',
+  '...0......0...',
  ],
  ArrowUp:[
+  '....000000....',
+  '..0023323300..',
+  '.023223322320.',
+  '.0323322332210',
+  '02332332323210',
+  '03233233232310',
+  '02323223232110',
+  '03232332321210',
+  '02323223232110',
+  '.023232321210.',
+  '.012222222210.',
+  '..0111111110..',
   '...00000000...',
-  '..0121221210..',
-  '.0122122121210',
-  '01212212212210',
-  '01221221221210',
-  '01212212212210',
-  '01221221221210',
-  '01212212212210',
-  '01221221221210',
-  '01212212212210',
-  '01211111111210',
-  '.001212121100.',
-  '..0000000000..',
+  '..............',
  ],
- ArrowLeft:[
-  '....000000....',
-  '..0012221210..',
-  '.012122212210.',
-  '0122221221210.',
-  '01212212212210',
-  '00111221221210',
-  '...00001212210',
-  '.......0121210',
-  '.......0012210',
-  '.......0021210',
-  '.......001210.',
-  '.......01210..',
-  '.......0000...',
- ],
- ArrowRight:[
-  '....000000....',
-  '..0121222100..',
-  '.012212221210.',
-  '.0121221222210',
-  '01221221221210',
-  '01212212211100',
-  '01221210000...',
-  '0121210.......',
-  '0122100.......',
-  '0121200.......',
-  '.012100.......',
-  '..01210.......',
-  '...0000.......',
- ],
+ ArrowRight:strawHelmetProfile,
+ ArrowLeft:strawHelmetProfile.map(row=>[...row].reverse().join('')),
 };
 function drawStrawHelmet(target,x,y,direction='ArrowDown'){
- const palette=['#493a22','#806239','#bc9959'];
+ const palette=['#243922','#465b2b','#748944','#a8b963'];
  const previous=target.fillStyle;
  helmetSprites[direction].forEach((row,dy)=>Array.from(row).forEach((pixel,dx)=>{
   if(pixel==='.') return;
@@ -2936,7 +2929,7 @@ function drawStrawHelmet(target,x,y,direction='ArrowDown'){
 }
 function helmetIcon(){
  const icon=document.createElement('canvas');
- icon.width=14;icon.height=13;
+ icon.width=helmetSprites.ArrowDown[0].length;icon.height=helmetSprites.ArrowDown.length;
  icon.className='armor-icon';
  icon.setAttribute('aria-hidden','true');
  drawStrawHelmet(icon.getContext('2d'),0,0);
