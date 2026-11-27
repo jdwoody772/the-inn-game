@@ -291,7 +291,7 @@ let inShop=false, shopStep=null, shopChoice=0;
 let ditch=startInDitch, plankTaken=millApproach || inMill, bridgeBuilt=plankTaken, wolfLine=-1;
 const wolf={id:'ditch-wolf',x:84,y:72,width:12,bottom:80,height:14,hp:32,phase:0,ticks:0};
 const fallenWolves=[[41,101],[115,116],[57,117]];
-let gemsFound=false, armorFound=false, helmetEquipped=false;
+let gemsFound=false, armorFound=false;
 let dismissedWolf=-1, discoveryOpen=false,discoveryMessage='';
 const strawHelmet={id:'straw-helmet',label:'Straw Helmet',value:1,description:'A cap woven from tough straw.',defBonus:1,slot:'head'};
 const strawArmor={id:'straw-armor',label:'Straw Armor',value:1,description:'Woven straw tied with cord.',defBonus:1,slot:'body'};
@@ -329,6 +329,7 @@ function changeRoad(destination){
  },170);
 }
 function enterRoad(destination){
+ lucaLandedAt=-Infinity;
  pounceStrike=null;
  const previousInterior=ruinsInterior;
  ruinsInterior=ruinsRoomNumber(destination);
@@ -1309,7 +1310,7 @@ let equippedItem=null;
 const jumpDuration=1050, jumpPeak=16, pounceStrikeDuration=180;
 let pounceStrike=null;
 let standingHeight=0;
-let jump=null, jumpFrame=0, lastJumpFrame=null;
+let jump=null, jumpFrame=0, lastJumpFrame=null, lucaLandedAt=-Infinity;
 let playerX=millStorage?23:inMill && !millGrain && !millPress && !millVault?21:80, playerY=millStorage?116:millGrain || millPress || millVault?127:inMill?102:yard?51:105, eyesClosed=false;
 let facing=millGrain || millPress || millVault?"ArrowUp":inMill?"ArrowRight":"ArrowDown";
 let stride=0, steps=0, idleTimer;
@@ -1443,7 +1444,7 @@ function draw(blink){
  ctx.restore();
  drawGuardMemoryShade(guardMemory);
  refreshInfo();
- if(screen==='play' && (ditch || millPress || sluiceRoom || arrowShot || stoneWave || pounceStrike || (jabFrame && equippedItem===stoneDagger.id) || scentShade>0 || scentPrompt || ruinsApproach || ruinsInterior ||
+ if(screen==='play' && (ditch || millPress || sluiceRoom || arrowShot || stoneWave || pounceStrike || now-lucaLandedAt<110 || (jabFrame && equippedItem===stoneDagger.id) || scentShade>0 || scentPrompt || ruinsApproach || ruinsInterior ||
   (woods && woodsCallThought.shownAt!==null && now-woodsCallThought.shownAt<4000) ||
   (wolfGrove && (!groveWolfDead || groveCollapseAt!==null && now-groveCollapseAt<ghostDuration+350)) ||
   woods && (woodsBoar.hp>0 || performance.now()-woodsBoar.defeatedAt<670 || performance.now()-gemTree.hitAt<380) || performance.now()<damageFlashUntil ||
@@ -1492,46 +1493,43 @@ function drawTraveler(blink){
  const blastLift=sluiceRoom && boss.phase==='intro' && boss.elapsed<475
   ?Math.sin(boss.elapsed/475*Math.PI)*18:0;
  ctx.translate(0,-Math.round((jump?.height??standingHeight)+blastLift));
- const flashLeft=damageFlashUntil-performance.now();
+ const now=performance.now();
+ const flashLeft=damageFlashUntil-now;
  if(flashLeft>0 && Math.floor(flashLeft/65)%2===0) ctx.globalAlpha=.35;
- if(jabFrame && equippedItem!=='grass-bow' && facing==='ArrowUp') drawJab();
- if(punching && facing==='ArrowUp') drawRearPunch();
+ const diveDirection=jump?.dive?jump.direction:null;
+ const strike=pounceStrike && now-pounceStrike.at<pounceStrikeDuration && pounceStrike;
+ const direction=raisedItem?'ArrowDown':diveDirection || strike?.direction || facing;
+ const pose=lucaJumpPose(now);
+ const action=raisedItem?null:lucaHandAction(direction,pose,now,strike);
+ const shield=raisedItem?null:equipment.get('shield');
+ const lookingBack=!raisedItem && direction==='ArrowUp' && woods && now<woodsLookBackUntil;
+ if(action?.kind==='bow' && shield) drawLucaShield(shield,direction,pose);
+ if(action && direction==='ArrowUp' && action.kind!=='bow') drawLucaAction(action,direction);
  ctx.save();
  ctx.translate(playerX-80,playerY-105);
  const body=equipment.get('body');
- const lookingBack=!raisedItem && facing==='ArrowUp' && woods && performance.now()<woodsLookBackUntil;
- if(raisedItem){
-  drawFront(blink,body);
-  drawFeet();
- }else if(facing==='ArrowLeft' || facing==='ArrowRight'){
-  ctx.save();
-  if(facing==='ArrowLeft'){
+ if(direction==='ArrowLeft' || direction==='ArrowRight'){
+  if(direction==='ArrowLeft'){
    ctx.translate(160,0);
    ctx.scale(-1,1);
   }
-  drawProfile(blink,body,facing);
-  ctx.restore();
+  drawProfile(blink,body,direction,pose,Boolean(action));
  }else{
-  if(facing==='ArrowUp') drawBack(blink,lookingBack,body);
-  else drawFront(blink,body);
-  drawFeet();
+  if(direction==='ArrowUp') drawBack(blink,lookingBack,body,Boolean(action));
+  else drawFront(blink,body,Boolean(action));
+  drawFeet(pose);
  }
- const gearFacing=raisedItem?'ArrowDown':facing;
- if(helmetEquipped) drawStrawHelmet(ctx,73,81,lookingBack?'ArrowLeft':gearFacing);
- if(raisedItem) drawRaisedItem(raisedItem.id);
  ctx.restore();
- if(equipment.get('head')===stoneHelm.id) drawEquippedStoneHelm(playerX,playerY,gearFacing);
- if(equipment.get('shield')===stoneShield.id && !raisedItem) drawEquippedStoneShield(playerX,playerY,gearFacing);
- if(punching && (facing==='ArrowLeft' || facing==='ArrowRight')) drawPunch();
- if(jabFrame && equippedItem!=='grass-bow' && (facing!=='ArrowUp' || equippedItem===stoneDagger.id)) drawJab();
- if(jabFrame && equippedItem==='grass-bow') drawBow();
- if(jump?.dive && jump.diveWeapon && jump.direction){
-  const [dx,dy]=directions.get(jump.direction);
-  ctx.save();
-  ctx.translate(playerX+dx*7,playerY-8+dy*4);
-  ctx.rotate(Math.atan2(dy,dx)+.66);
-  drawPounceWeapon(jump.diveWeapon);
-  ctx.restore();
+ const head=equipment.get('head');
+ const headFacing=lookingBack?'ArrowLeft':direction;
+ if(head===strawHelmet.id) drawStrawHelmet(ctx,playerX-7,playerY-24,headFacing);
+ if(head===stoneHelm.id) drawStoneEquipment(stoneHelmFacings[headFacing],playerX,playerY-24);
+ if(equipment.get('accessory')===stoneFang.id) drawLucaFang(direction);
+ if(shield && action?.kind!=='bow') drawLucaShield(shield,direction,pose);
+ if(action && (direction!=='ArrowUp' || action.kind==='bow')) drawLucaAction(action,direction);
+ if(raisedItem){
+  ctx.translate(playerX-80,playerY-105);
+  drawRaisedItem(raisedItem.id);
  }
  ctx.restore();
 }
@@ -2944,7 +2942,7 @@ function helmetIcon(){
 function drawLucaSatchel(x,y){
  rect(x,y,5,5,0);rect(x+1,y+1,3,3,2);rect(x+1,y+1,3,1,3);rect(x+2,y+2,1,1,0);
 }
-function drawFront(blink,body){
+function drawFront(blink,body,activeArm=false){
  drawStoneEquipment(lucaFrontHead,80,82);
  if(blink){
   rect(77,90,2,1,1);rect(82,90,2,1,1);
@@ -2963,16 +2961,11 @@ function drawFront(blink,body){
  rect(74,98,2,3,3);
  if(raisedItem){
   rect(85,90,4,10,0);rect(86,91,2,8,2);rect(87,85,3,6,0);rect(88,85,1,4,3);
- }else if(punching){
-  rect(85,96,3,5,2);
-  rect(83,96,4,4,0);
-  rect(83,97,3,3,2);
-  drawFist(83,98);
- }else{
+ }else if(!activeArm){
   rect(84,98,2,3,3);
  }
 }
-function drawBack(blink,lookBack=false,body){
+function drawBack(blink,lookBack=false,body,activeArm=false){
  rect(75,94,10,8,0);rect(73,96,3,5,0);rect(84,96,3,5,0);
  drawStoneEquipment(lucaBackCloak,78,93);
  if(lookBack){
@@ -2985,11 +2978,13 @@ function drawBack(blink,lookBack=false,body){
  if(body===stoneArmor.id) drawStoneEquipment(stoneCuirassBack,80,94);
  if(body===strawArmor.id) drawStoneEquipment(strawArmorFacings.ArrowUp,80,94);
  drawLucaSatchel(83,99);
- rect(74,100,1,1,3);rect(86,98,1,3,3);
+ rect(74,100,1,1,3);
+ if(!activeArm) rect(86,98,1,3,3);
 }
-function drawFeet(){
- const leftFoot=102+stride*2;
- const rightFoot=102-stride*2;
+function drawFeet(pose='ground'){
+ const step=pose==='ground'?stride*2:0;
+ const leftFoot=102+step-(pose==='tuck'?3:pose==='launch' || pose==='landing'?1:pose==='dive'?2:0);
+ const rightFoot=102-step-(pose==='tuck'?2:pose==='dive'?4:pose==='reach' || pose==='landing'?1:0);
  rect(75,101,4,Math.max(2,leftFoot-98),0);
  rect(81,101,4,Math.max(2,rightFoot-98),0);
  rect(75,leftFoot+1,4,2,1);
@@ -2999,9 +2994,11 @@ function drawProfileHead(blink){
  drawStoneEquipment(lucaProfileHead,80,82);
  rect(82,89,blink?2:1,1,blink?1:0);
 }
-function drawProfile(blink,body,direction){
- drawStoneEquipment(lucaSideCloak,76,94);
- rect(76-stride*2,101,4,4,1);
+function drawProfile(blink,body,direction,pose='ground',activeArm=false){
+ const step=pose==='ground'?stride:0;
+ const tucked=pose==='tuck' || pose==='dive';
+ drawStoneEquipment(lucaSideCloak,tucked?75:76,94);
+ rect(76-step*2-(pose==='dive'?2:0),tucked?99:101,4,tucked?3:4,1);
  rect(75,94,10,8,0);
  drawProfileHead(blink);
  rect(76,95,9,6,1);rect(75,94,9,2,2);rect(76,96,3,1,2);
@@ -3009,12 +3006,20 @@ function drawProfile(blink,body,direction){
  drawLucaSatchel(75,99);
  if(body===stoneArmor.id) drawStoneEquipment(stoneCuirassProfile,80,95);
  if(body===strawArmor.id) drawStoneEquipment(strawArmorFacings[direction],80,95);
- rect(78+stride,96,3,4,1);
- if(body===stoneArmor.id || body===strawArmor.id) rect(79+stride,96,1,2,2);
- rect(79+stride,99,2,2,3);
- rect(80+stride*2,101,4,5,0);rect(81+stride*2,104,4,2,1);
+ if(!activeArm){
+  rect(78+step,96,3,4,1);
+  if(body===stoneArmor.id || body===strawArmor.id) rect(79+step,96,1,2,2);
+  rect(79+step,99,2,2,3);
+ }
+ const footX=80+step*2+(pose==='landing' || pose==='reach'?1:0);
+ const footY=tucked?102:pose==='landing'?104:105;
+ rect(footX,101,4,footY-100,0);rect(footX+1,footY-1,4,2,1);
 
 }
+const directions=new Map([
+ ['ArrowUp',[0,-1]],['ArrowDown',[0,1]],
+ ['ArrowLeft',[-1,0]],['ArrowRight',[1,0]]
+]);
 let screen='title', blinkTimer;
 music.volume=yard && !inShop && !inMill && !ruinsInterior?.35:1;
 draw(false);
@@ -3039,10 +3044,6 @@ function blink(){
  },140);
 }
 
-const directions=new Map([
- ['ArrowUp',[0,-1]],['ArrowDown',[0,1]],
- ['ArrowLeft',[-1,0]],['ArrowRight',[1,0]]
-]);
 const furniture=[13,119].flatMap(x=>[
  {id:'table-'+x,x,y:73,width:26,bottom:92,height:18},
  {id:'stool-'+x,x:x+7,y:98,width:12,bottom:110,height:8,platform:true,seatY:102}
@@ -3065,20 +3066,102 @@ function platformAt(x,y){
  return roomObjects().find(object=>object.platform && !object.broken &&
   x+5>object.x && x-5<object.x+object.width && y>=object.y && y<=object.bottom);
 }
-function drawFist(x,y,shade=3){
- rect(x-1,y-2,3,5,0);
- rect(x-2,y-1,5,3,0);
- rect(x,y-1,1,3,shade);
- rect(x-1,y,3,1,shade);
+function lucaJumpPose(now){
+ if(!jump) return now-lucaLandedAt<110?'landing':'ground';
+ if(jump.dive) return 'dive';
+ const progress=jump.elapsed/(jump.pounce?850:jumpDuration);
+ if(progress<.22 && !jump.pounce) return 'launch';
+ return progress<.76?'tuck':'reach';
 }
-function drawRearPunch(){
- rect(playerX+5,playerY-13,4,5,2);
- drawFist(playerX+8,playerY-13,2);
+function lucaHandAction(direction,pose,now,strike){
+ const [dx,dy]=directions.get(direction);
+ const aim=Math.atan2(dy,dx);
+ const shoulderX=dx?dx*2:5;
+ if(jabFrame && equippedItem===grassBow.id) return {kind:'bow'};
+ if(strike || pose==='dive'){
+  const progress=strike?(now-strike.at)/pounceStrikeDuration:0;
+  const angle=aim+(strike?(progress-.5)*2.4:.5);
+  return {kind:'weapon',weapon:strike?.weapon??jump?.diveWeapon,x:shoulderX+Math.round(Math.cos(angle)*6),
+   y:-8+Math.round(Math.sin(angle)*5),angle};
+ }
+ if(jabFrame && equippedItem===stoneDagger.id){
+  const elapsed=now-stoneSwipeAt;
+  const swing=Math.max(0,Math.min(1,(elapsed-55)/100));
+  const angle=aim-1.16+swing*2.32;
+  const reach=5+Math.sin(swing*Math.PI)*3-Math.min(1,Math.max(0,(elapsed-155)/110))*2;
+  return {kind:'weapon',weapon:'stone-dagger',x:shoulderX+Math.round(Math.cos(angle)*reach),
+   y:-10+Math.round(Math.sin(angle)*reach),angle,trail:swing>0 && elapsed<weaponAttacks['stone-dagger'].windup+73};
+ }
+ if(punching || jabFrame){
+  const reach=jabFrame===1?3:7;
+  return {kind:'weapon',weapon:jabFrame?'dagger':null,x:shoulderX+dx*reach,y:-8+dy*reach,angle:aim};
+ }
+ const lift=pose==='tuck'?3:pose==='launch'?1:0;
+ if(equippedItem===grassBow.id) return {kind:'carry-bow',x:dx?dx*2:6,y:-6-lift,angle:Math.PI/2+dx*.18};
+ if(equippedItem===daggerItem.id || equippedItem===stoneDagger.id){
+  return {kind:'carry-dagger',weapon:equippedItem,x:dx?dx*2:6,y:-6-lift,angle:Math.PI/2-dx*.3};
+ }
+ if(pose!=='ground') return {kind:'weapon',x:shoulderX+dx*(pose==='tuck'?4:2),
+  y:-7-lift+dy*2,angle:aim};
+ return null;
 }
-function drawPunch(){
- const [dx,dy]=directions.get(facing);
- const x=playerX+dx*9, y=playerY-8+dy*8;
- drawFist(x,y);
+function drawLucaArm(direction,x,y,offhand=false){
+ const [dx]=directions.get(direction);
+ const shoulderX=playerX+(dx?dx*(offhand?-2:1):offhand?-5:5);
+ const shoulderY=playerY-10;
+ const length=Math.max(Math.abs(x-shoulderX),Math.abs(y-shoulderY),1);
+ for(let step=0;step<=length;step++){
+  const px=Math.round(shoulderX+(x-shoulderX)*step/length);
+  const py=Math.round(shoulderY+(y-shoulderY)*step/length);
+  rect(px-1,py-1,3,3,0);
+ }
+ for(let step=0;step<=length;step++){
+  const px=Math.round(shoulderX+(x-shoulderX)*step/length);
+  const py=Math.round(shoulderY+(y-shoulderY)*step/length);
+  rect(px,py,1,1,step<length/2?2:1);
+ }
+ rect(x-1,y-1,2,2,3);
+}
+function drawLucaAction(action,direction){
+ if(action.kind==='bow'){drawBow(direction);return;}
+ const {kind,weapon,angle,trail}=action;
+ const x=playerX+action.x, y=playerY+action.y;
+ drawLucaArm(direction,x,y);
+ ctx.save();
+ ctx.translate(x,y);
+ if(trail){
+  for(let i=1;i<=5;i++){
+   const arc=angle+Math.PI/2-i*.18;
+   rect(Math.round(Math.cos(arc)*8),Math.round(Math.sin(arc)*8),2,1,i<3?3:2);
+  }
+ }
+ ctx.rotate(angle);
+ if(kind==='carry-bow'){
+  rect(-4,0,9,1,0);rect(-3,-2,7,1,2);
+  rect(-4,-1,1,2,3);rect(4,-1,1,2,3);
+ }else if(kind==='carry-dagger'){
+  rect(-2,-1,8,2,0);rect(0,0,6,1,weapon==='stone-dagger'?3:2);
+ }else if(weapon){
+  drawPounceWeapon(weapon);
+ }else{
+  rect(-1,-2,4,4,0);rect(0,-1,2,2,3);
+ }
+ ctx.restore();
+ rect(x-1,y-1,2,2,3);
+}
+function drawLucaFang(direction){
+ const [dx]=directions.get(direction);
+ const x=playerX+dx*2, y=playerY-11;
+ if(direction==='ArrowUp'){rect(x-2,y,4,1,2);return;}
+ rect(x-2,y-1,1,1,2);rect(x+1,y-1,1,1,2);
+ rect(x-1,y,3,2,0);rect(x,y,1,2,3);
+}
+function drawLucaShield(shield,direction,pose){
+ const [dx,dy]=directions.get(direction);
+ const x=playerX+(dx?-dx*5:-7), y=playerY-12-(pose==='tuck'?2:pose==='dive'?1:0);
+ if(!dx) rect(x+1,y+5+(dy<0?1:0),6,3,1);
+ const sprites=shield===stoneShield.id?stoneShieldFacings:grassShieldFacings;
+ drawStoneEquipment(sprites[direction],x,y);
 }
 function bowOrigin(dx,dy){
  return {x:playerX+(dx===0?4:0),y:playerY-9};
@@ -3087,12 +3170,15 @@ function flyingArrowOrigin(dx,dy){
  const {x,y}=bowOrigin(dx,dy);
  return {x,y:y-Math.round(jump?.height??standingHeight)};
 }
-function drawBow(){
- const [dx,dy]=directions.get(facing);
+function drawBow(direction){
+ const [dx,dy]=directions.get(direction);
  const {x,y}=bowOrigin(dx,dy);
  const drawn=jabFrame===1;
  const pixel=(forward,side,shade)=>rect(x+dx*forward-dy*side,y+dy*forward+dx*side,1,1,shade);
  // The curved stave stays in the leading hand while the other hand pulls the string.
+ drawLucaArm(direction,x+dx*6-dy,y+dy*6+dx,true);
+ const nock=drawn?1:4;
+ drawLucaArm(direction,x+dx*nock,y+dy*nock);
  for(let side=-4;side<=4;side++){
   const forward=7-Math.max(0,Math.abs(side)-2);
   pixel(forward,side,3);
@@ -3103,7 +3189,7 @@ function drawBow(){
  if(drawn){
   for(let forward=1;forward<9;forward++) pixel(forward,0,3);
  }
- pixel(drawn?1:4,0,3);
+ pixel(nock,0,3);
  pixel(6,1,3);
 }
 function drawFlyingArrow(){
@@ -3131,7 +3217,7 @@ function drawPounceWeapon(weapon){
 function drawPounceStrike(){
  const progress=(performance.now()-pounceStrike.at)/pounceStrikeDuration;
  if(progress>=1){pounceStrike=null;return;}
- const {x,y,direction,weapon}=pounceStrike;
+ const {x,y,direction}=pounceStrike;
  const [dx,dy]=directions.get(direction);
  const swing=Math.atan2(dy,dx)+(progress-.5)*2.4;
  ctx.save();
@@ -3141,9 +3227,6 @@ function drawPounceStrike(){
   const angle=swing-i*.16;
   rect(Math.round(Math.cos(angle)*15),Math.round(Math.sin(angle)*10),2,1,i<3?3:2);
  }
- ctx.rotate(swing);
- ctx.translate(7,0);
- drawPounceWeapon(weapon);
  ctx.restore();
 }
 function drawStoneWave(){
@@ -3176,45 +3259,6 @@ function animateDebris(now){
  debrisPrevious=now;
  draw(eyesClosed);
  if(debrisElapsed<debrisDuration) debrisFrame=requestAnimationFrame(animateDebris);
-}
-function drawStoneSwipe(dx,dy){
- const {windup}=weaponAttacks['stone-dagger'];
- const elapsed=performance.now()-stoneSwipeAt;
- const swing=Math.max(0,Math.min(1,(elapsed-55)/100));
- const angle=Math.atan2(dy,dx)-1.16+swing*2.32;
- const reach=5+Math.sin(swing*Math.PI)*3-Math.min(1,Math.max(0,(elapsed-155)/110))*2;
- ctx.save();
- ctx.translate(playerX,playerY-9);
- if(swing>0 && elapsed<windup+73){
-  for(let i=1;i<=6;i++){
-   const trail=angle-i*.15;
-   rect(Math.round(Math.cos(trail)*15),Math.round(Math.sin(trail)*15),2,1,i<3?3:2);
-  }
- }
- ctx.rotate(angle);
- rect(0,-1,reach+1,3,2);
- ctx.translate(reach,0);
- drawStoneBlade();
- ctx.restore();
-}
-function drawJab(){
- const [dx,dy]=directions.get(facing);
- if(equippedItem===stoneDagger.id){drawStoneSwipe(dx,dy);return;}
- const side=dx===0?5:0;
- const extension=jabFrame===1?1:5;
- const x=playerX+side+dx*(4+extension);
- const y=playerY-9+dy*(2+extension);
- ctx.save();
- ctx.translate(x,y);
- ctx.rotate(Math.atan2(dy,dx));
- // Hand, grip, guard, then a tapered blade pointing along the jab.
- rect(-3,-1,3,3,2);
- rect(-1,0,3,1,0);
- rect(2,-2,1,5,0);
- rect(3,-1,4,3,1);
- rect(3,0,6,1,3);
- rect(4,-1,2,1,3);
- ctx.restore();
 }
 function drawStoneBlade(){
  rect(-3,0,6,2,0);rect(-2,0,4,1,2);rect(2,-2,2,5,0);
@@ -3815,6 +3859,7 @@ function advanceJump(now){
   standingHeight=platform.height;
   const landing=jump;
   jump=null;
+  lucaLandedAt=performance.now();
   finishPounceDive(landing);
   draw(eyesClosed);
   return;
@@ -3839,7 +3884,10 @@ function advanceJump(now){
   const landed=!ruinsInterior || finishRuinsLanding(landing);
   checkSluiceFooting();
   if(drowningAt===null){
-   if(landed)finishPounceDive(landing);
+   if(landed){
+    lucaLandedAt=performance.now();
+    finishPounceDive(landing);
+   }
    collectGem();
   }
  }
@@ -4510,7 +4558,6 @@ function renderStats(){
  document.querySelector('#pounce-description').hidden=!ruinsState.pounce;
  highlightScent(false);
  statFields.replaceChildren();
- helmetEquipped=equipment.get('head')===strawHelmet.id;
  const defenseBonus=gearBonus('defBonus');
  hpPerStar=Math.max(1,baseHpPerStar+defenseBonus);
  const hpLabel=document.createElement('dt'),hpValue=document.createElement('dd');
